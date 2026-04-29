@@ -1,0 +1,300 @@
+services:
+  bid-generator:
+    container_name: bid-generator
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bid-generator:local
+    restart: always
+    env_file:
+      - .env
+    environment:
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://10.25.1.48/v1}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MODEL: ${LLM_MODEL:-qwen-max}
+      UPLOAD_BASE_URL: ${UPLOAD_BASE_URL:-https://demo.langcore.cn/}
+      PLATFORM_KEY: ${PLATFORM_KEY}
+      PORT: ${PORT:-18010}
+    ports:
+      - '${BID_GENERATOR_PORT:-18010}:18010'
+    volumes:
+      - ./runtime:/app/runtime
+    networks:
+      - ltm
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  db:
+    image: docker.langcore.net/mirror/library/postgres:latest
+    container_name: db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ctBvXFzE6tQU6umSXzXn
+      POSTGRES_DB: ltm
+    ports:
+      - '15432:5432'
+    volumes:
+      - ./data/db/data:/var/lib/postgresql
+      - ./data/db/conf:/etc/postgresql
+    networks:
+      - ltm
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  redis:
+    image: docker.langcore.net/mirror/library/redis:latest
+    container_name: ltm-redis
+    restart: always
+    networks:
+      - ltm
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  etcd:
+    container_name: milvus-etcd
+    image: docker.langcore.net/quay.io/coreos/etcd:v3.5.18
+    restart: always
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - ./data/etcd:/etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ['CMD', 'etcdctl', 'endpoint', 'health']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - ltm
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  minio:
+    container_name: milvus-minio
+    image: docker.langcore.net/mirror/minio/minio:RELEASE.2023-03-20T20-16-18Z
+    restart: always
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - '9001:9001'
+      - '9000:9000'
+    volumes:
+      - ./data/minio:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - ltm
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  milvus:
+    container_name: milvus-standalone
+    image: docker.langcore.net/mirror/milvusdb/milvus:v2.5.6
+    restart: always
+    command: ['milvus', 'run', 'standalone']
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      MINIO_ACCESS_KEY_ID: minioadmin
+      MINIO_SECRET_ACCESS_KEY: minioadmin
+      COMMON_SECURITY_DEFAULTROOTPASSWORD: '123456789'
+    volumes:
+      - ./data/milvus:/var/lib/milvus
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9091/healthz']
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+    ports:
+      - '19530:19530'
+      - '9091:9091'
+    depends_on:
+      - 'etcd'
+      - 'minio'
+    networks:
+      - ltm
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+  attu:
+    container_name: attu
+    image: docker.langcore.net/mirror/zilliz/attu
+    restart: always
+    depends_on:
+      - milvus
+    environment:
+      MILVUS_URL: milvus:19530
+    ports:
+      - 8300:3000
+    networks:
+      - ltm
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  py-utils:
+    container_name: py-utils
+    image: docker.langcore.net/langcore/py-utils:v0.3.0_private
+    restart: always
+    volumes:
+      - ./pyarmor.rkey:/app/pyarmor.rkey
+    networks:
+      - ltm
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  doc-parser:
+    container_name: doc-parser
+    image: docker.langcore.net/langcore/docparse:v6.1.5-26040217-cuda12.8
+    restart: always
+    environment:
+      VLM_PROMPT: "请分析以上PDF页面内容，并以Markdown格式返回该页面的文本。\n忽略页眉页脚。\n若存在表格，以html格式返回解析值，确保解析出的html表格格式和原表格结构完全一致。"
+      REAL_UPLOAD: ${REAL_UPLOAD}
+      PIC_UPLOAD_API_BASE: ${PIC_UPLOAD_API_BASE}
+      DOMGPU_COMP_MODE: ${DOMGPU_COMP_MODE}
+      PY_UTILS_URL: ${PY_UTILS_URL}
+      PDLA_HOST: ${PDLA_HOST}
+      PDLA_PORT: ${PDLA_PORT}
+      PDLA_OCR_MODEL: ${PDLA_OCR_MODEL}
+      PY_UTILS_TIMEOUT: 120
+    volumes:
+      - ./pyarmor.rkey:/app/pyarmor.rkey
+    ports:
+      - '10086:8000'
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - ltm
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  layout-analysis:
+    image: docker.langcore.net/langcore/pdla:v2.1
+    container_name: layout-analysis
+    ports:
+      - '15060:15060'
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - HF_ENDPOINT=https://hf-mirror.com
+      - MAX_IMAGE_DIMENSION=1600
+    networks:
+      - ltm
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  ltm:
+    container_name: ltm
+    image: docker.langcore.net/langcore/ltm:v1.16.2
+    restart: always
+    privileged: true
+    depends_on:
+      - db
+      - milvus
+      - py-utils
+      - minio
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      PASSWD_SALT: ${PASSWD_SALT}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST}
+      MILVUS_ADDRESS: ${MILVUS_ADDRESS}
+      MILVUS_USERNAME: ${MILVUS_USERNAME}
+      MILVUS_PASSWORD: ${MILVUS_PASSWORD}
+      VECTOR_DB_NAME: ${VECTOR_DB_NAME}
+      AI_TIMEOUT: ${AI_TIMEOUT}
+      PY_UTILS_URL: ${PY_UTILS_URL}
+      LICENCE_SERVER: ${LICENCE_SERVER}
+      MINIO_ADDRESS: ${MINIO_ADDRESS}
+      MINIO_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY_ID}
+      MINIO_SECRET_ACCESS_KEY: ${MINIO_SECRET_ACCESS_KEY}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
+      MINIO_MOUNT_PATH: ${MINIO_MOUNT_PATH}
+      FILE_SAVE_PATH: ${FILE_SAVE_PATH}
+      IMAGE_SAVE_PATH: ${IMAGE_SAVE_PATH}
+      INIT_ROOT_PASSWORD: ${INIT_ROOT_PASSWORD}
+      NODE_OPTIONS: ${NODE_OPTIONS}
+      REDIS_URL: ${REDIS_URL}
+      BASE_URL: ${BASE_URL}
+      AUTH_URL: ${BASE_URL}
+      ALIBABA_CLOUD_ACCESS_KEY_ID: ${ALIBABA_CLOUD_ACCESS_KEY_ID}
+      ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${ALIBABA_CLOUD_ACCESS_KEY_SECRET}
+      ALIBABA_CLOUD_ENDPOINT: ${ALIBABA_CLOUD_ENDPOINT}
+      ALIBABA_CLOUD_APP_KEY: ${ALIBABA_CLOUD_APP_KEY}
+      NEXT_PUBLIC_FILE_VIEWER_URL: ${NEXT_PUBLIC_FILE_VIEWER_URL}
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
+      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE}
+      MAX_FILE_COUNT: ${MAX_FILE_COUNT}
+      ENABLE_CROSS_SITE_AUTH: ${ENABLE_CROSS_SITE_AUTH}
+      PM2_INSTANCES: ${PM2_INSTANCES}
+      DISABLE_HOMEPAGE: true
+      HOSTNAME: 0.0.0.0
+      FILE_MIGRATE_BACKUP_WARNING_SHOWN: 1
+      ORACLE_CLIENT_LIB_DIR: /oracle-client
+      CHATBOT_SIMPLY_PARSE_MAX_TEXT_LENGTH: 30000
+      DEFAULT_EMAIL_SUFFIX: '@aerosun.com'
+    networks:
+      - ltm
+    ports:
+      - 12123:3000
+    volumes:
+      - ./data/ltm:/data
+      - /opt/oracle/clients/instantclient_11_9/instantclient_19_29:/oracle-client
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+networks:
+  ltm:

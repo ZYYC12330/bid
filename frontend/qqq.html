@@ -1,0 +1,382 @@
+import React, { useMemo, useState } from "react";
+
+const cn = (...classes) => classes.filter(Boolean).join(" ");
+
+const Icon = ({ name, className = "" }) => {
+  const common = {
+    className: cn("inline-block", className),
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": "true",
+  };
+
+  const icons = {
+    upload: (
+      <svg {...common}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="M17 8 12 3 7 8" /><path d="M12 3v12" /></svg>
+    ),
+    file: (
+      <svg {...common}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /><path d="M10 9H8" /></svg>
+    ),
+    check: (
+      <svg {...common}><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-5" /></svg>
+    ),
+    clock: (
+      <svg {...common}><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+    ),
+    warning: (
+      <svg {...common}><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+    ),
+    wand: (
+      <svg {...common}><path d="M15 4V2" /><path d="M15 16v-2" /><path d="M8 9h2" /><path d="M20 9h2" /><path d="M17.8 6.2 19 5" /><path d="M17.8 11.8 19 13" /><path d="M2 22l14-14" /><path d="m7 17-2-2" /></svg>
+    ),
+    braces: (
+      <svg {...common}><path d="M8 3H7a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2 2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1" /><path d="M16 3h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2 2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-1" /></svg>
+    ),
+    download: (
+      <svg {...common}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="M7 10l5 5 5-5" /><path d="M12 15V3" /></svg>
+    ),
+    refresh: (
+      <svg {...common}><path d="M21 12a9 9 0 0 0-15-6.7L3 8" /><path d="M3 3v5h5" /><path d="M3 12a9 9 0 0 0 15 6.7L21 16" /><path d="M16 16h5v5" /></svg>
+    ),
+    play: (
+      <svg {...common}><path d="M5 3l14 9-14 9V3z" /></svg>
+    ),
+    search: (
+      <svg {...common}><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+    ),
+    settings: (
+      <svg {...common}><path d="M4 21v-7" /><path d="M4 10V3" /><path d="M12 21v-9" /><path d="M12 8V3" /><path d="M20 21v-5" /><path d="M20 12V3" /><path d="M2 14h4" /><path d="M10 8h4" /><path d="M18 16h4" /></svg>
+    ),
+    shield: (
+      <svg {...common}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-5" /></svg>
+    ),
+    split: (
+      <svg {...common}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M12 4v16" /><path d="M8 9h1" /><path d="M15 9h1" /><path d="M8 14h1" /><path d="M15 14h1" /></svg>
+    ),
+    eye: (
+      <svg {...common}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
+    ),
+    chevron: (
+      <svg {...common}><path d="m9 18 6-6-6-6" /></svg>
+    ),
+    bot: (
+      <svg {...common}><rect x="4" y="8" width="16" height="12" rx="2" /><path d="M12 4v4" /><path d="M8 2h8" /><path d="M9 14h.01" /><path d="M15 14h.01" /><path d="M9 18h6" /></svg>
+    ),
+    database: (
+      <svg {...common}><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5" /><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" /></svg>
+    ),
+    workflow: (
+      <svg {...common}><rect x="3" y="3" width="6" height="6" rx="1" /><rect x="15" y="3" width="6" height="6" rx="1" /><rect x="9" y="15" width="6" height="6" rx="1" /><path d="M9 6h6" /><path d="M18 9v3a3 3 0 0 1-3 3" /><path d="M6 9v3a3 3 0 0 0 3 3" /></svg>
+    ),
+  };
+
+  return icons[name] || icons.file;
+};
+
+const Card = ({ className = "", children }) => (
+  <div className={cn("bg-white", className)}>{children}</div>
+);
+
+const CardContent = ({ className = "", children }) => <div className={className}>{children}</div>;
+
+const Button = ({ className = "", children, variant = "default", size = "default", ...props }) => {
+  const base = "inline-flex items-center justify-center font-medium transition-colors disabled:pointer-events-none disabled:opacity-50";
+  const variants = {
+    default: "bg-slate-950 text-white hover:bg-slate-800",
+    outline: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+    ghost: "text-slate-600 hover:bg-slate-100",
+  };
+  const sizes = {
+    default: "h-10 px-4 py-2 text-sm",
+    sm: "h-8 px-3 text-sm",
+    icon: "h-9 w-9",
+  };
+
+  return (
+    <button type="button" className={cn(base, variants[variant] || variants.default, sizes[size] || sizes.default, className)} {...props}>
+      {children}
+    </button>
+  );
+};
+
+const pipeline = [
+  { id: "upload", title: "上传招标文件", desc: "支持 DOCX，自动校验页数、目录、附件与格式", artifact: "招标文件.docx", icon: "upload", status: "done" },
+  { id: "template", title: "生成标书模板", desc: "generate_bid_templates.py", artifact: "商务标模版.docx / 技术标模版.docx", icon: "split", status: "done" },
+  { id: "items", title: "提取待填项", desc: "extract_bid_template_items.py / extract_bid_template_items_ai.py", artifact: "待填项清单.json", icon: "braces", status: "active" },
+  { id: "qwen", title: "Qwen 智能填充", desc: "qwen_fill_request.py", artifact: "AI填充结果.json", icon: "bot", status: "pending" },
+  { id: "fill", title: "生成已填充 DOCX", desc: "fill_bid_template.py", artifact: "已填充 DOCX", icon: "file", status: "pending" },
+];
+
+const fillItems = [
+  { key: "project_name", label: "项目名称", source: "招标文件 P1", value: "智慧园区综合管理平台建设项目", confidence: 98, risk: "low" },
+  { key: "bidder_name", label: "投标人名称", source: "企业资料库", value: "北京某某科技有限公司", confidence: 99, risk: "low" },
+  { key: "delivery_days", label: "交付周期", source: "技术响应规则", value: "合同签订后 90 个自然日内完成交付", confidence: 86, risk: "medium" },
+  { key: "warranty", label: "质保期", source: "招标文件 P42", value: "自终验合格之日起 3 年", confidence: 92, risk: "low" },
+  { key: "implementation_plan", label: "实施方案", source: "知识库 + Qwen", value: "分为启动、设计、开发、联调、试运行、验收六个阶段。", confidence: 78, risk: "medium" },
+];
+
+const logs = [
+  "09:31:04 文件上传完成：招标文件.docx，大小 18.6MB",
+  "09:31:18 已生成商务标模版.docx、技术标模版.docx",
+  "09:31:29 正在提取待填项：发现 126 个占位符、32 个表格字段",
+  "09:31:35 AI 提取模式已启用：extract_bid_template_items_ai.py",
+];
+
+function validatePipeline(steps) {
+  const expectedIds = ["upload", "template", "items", "qwen", "fill"];
+  return expectedIds.every((id, index) => steps[index]?.id === id) && steps.every((step) => step.title && step.desc && step.artifact && step.icon && step.status);
+}
+
+function validateFillItems(items) {
+  return items.every((item) => item.key && item.label && item.value && item.confidence >= 0 && item.confidence <= 100 && ["low", "medium", "high"].includes(item.risk));
+}
+
+const testResults = [
+  { name: "pipeline contains the complete bid-generation flow", pass: validatePipeline(pipeline) },
+  { name: "fill items have valid confidence and risk values", pass: validateFillItems(fillItems) },
+  { name: "active pipeline step exists", pass: pipeline.some((step) => step.status === "active") },
+];
+
+const StatusBadge = ({ status }) => {
+  const map = {
+    done: { text: "已完成", cls: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: "check" },
+    active: { text: "运行中", cls: "bg-blue-50 text-blue-700 border-blue-200", icon: "refresh" },
+    pending: { text: "等待中", cls: "bg-slate-50 text-slate-500 border-slate-200", icon: "clock" },
+    error: { text: "需处理", cls: "bg-amber-50 text-amber-700 border-amber-200", icon: "warning" },
+  };
+  const item = map[status] || map.pending;
+
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium", item.cls)}>
+      <Icon name={item.icon} className={cn("h-3.5 w-3.5", status === "active" ? "animate-spin" : "")} />
+      {item.text}
+    </span>
+  );
+};
+
+const Metric = ({ label, value, hint }) => (
+  <Card className="rounded-2xl border border-slate-200 shadow-sm">
+    <CardContent className="p-5">
+      <div className="text-sm text-slate-500">{label}</div>
+      <div className="mt-2 text-2xl font-semibold text-slate-950">{value}</div>
+      <div className="mt-1 text-xs text-slate-400">{hint}</div>
+    </CardContent>
+  </Card>
+);
+
+export default function BidGenerationPlatformUI() {
+  const [selected, setSelected] = useState("items");
+  const current = useMemo(() => pipeline.find((step) => step.id === selected) || pipeline[2], [selected]);
+  const passedTests = testResults.filter((test) => test.pass).length;
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-950">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm">
+              <Icon name="wand" className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-lg font-semibold tracking-tight">AI 标书生成平台</div>
+              <div className="text-xs text-slate-500">招标文件解析 · 模板生成 · Qwen 填充 · DOCX 交付</div>
+            </div>
+          </div>
+          <div className="hidden items-center gap-2 sm:flex">
+            <Button variant="outline" className="gap-2 rounded-xl"><Icon name="settings" className="h-4 w-4" />流程配置</Button>
+            <Button className="gap-2 rounded-xl"><Icon name="play" className="h-4 w-4" />启动生成</Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-7xl px-6 py-6">
+        <section className="grid grid-cols-12 gap-6">
+          <div className="col-span-12 lg:col-span-8">
+            <Card className="overflow-hidden rounded-3xl border border-slate-200 shadow-sm">
+              <CardContent className="p-0">
+                <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-6 text-white">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200 ring-1 ring-white/15">
+                        <Icon name="shield" className="h-3.5 w-3.5" /> 生产环境 · Project BID-20260424-001
+                      </div>
+                      <h1 className="mt-4 text-3xl font-semibold tracking-tight">智慧园区综合管理平台建设项目</h1>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                        当前正在从模板中抽取待填字段，完成后将调用 Qwen 生成商务标与技术标内容，并回填为可下载 DOCX。
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/15">
+                      <div className="text-xs text-slate-300">总体进度</div>
+                      <div className="mt-1 text-3xl font-semibold">52%</div>
+                      <div className="mt-3 h-2 w-40 overflow-hidden rounded-full bg-white/15">
+                        <div className="h-full w-[52%] rounded-full bg-white" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 p-5 md:grid-cols-5">
+                  {pipeline.map((step, index) => {
+                    const active = selected === step.id;
+                    return (
+                      <button
+                        key={step.id}
+                        type="button"
+                        onClick={() => setSelected(step.id)}
+                        className={cn(
+                          "group rounded-2xl border p-4 text-left transition-all",
+                          active ? "border-slate-950 bg-slate-950 text-white shadow-md" : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                        )}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", active ? "bg-white/15" : "bg-slate-100")}>
+                            <Icon name={step.icon} className="h-4 w-4" />
+                          </div>
+                          <span className={cn("text-xs", active ? "text-slate-300" : "text-slate-400")}>0{index + 1}</span>
+                        </div>
+                        <div className="mt-3 text-sm font-semibold">{step.title}</div>
+                        <div className={cn("mt-1 line-clamp-2 text-xs", active ? "text-slate-300" : "text-slate-500")}>{step.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="col-span-12 lg:col-span-4">
+            <Card className="h-full rounded-3xl border border-slate-200 shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-slate-500">当前节点</div>
+                    <div className="mt-1 text-xl font-semibold">{current.title}</div>
+                  </div>
+                  <StatusBadge status={current.status} />
+                </div>
+                <div className="mt-5 rounded-2xl bg-slate-50 p-4">
+                  <div className="text-xs font-medium text-slate-500">执行脚本</div>
+                  <code className="mt-2 block rounded-xl bg-white px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200">{current.desc}</code>
+                  <div className="mt-4 text-xs font-medium text-slate-500">输出产物</div>
+                  <div className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-800">
+                    <Icon name="database" className="h-4 w-4 text-slate-400" /> {current.artifact}
+                  </div>
+                </div>
+                <div className="mt-5 grid grid-cols-2 gap-3">
+                  <Button variant="outline" className="gap-2 rounded-xl"><Icon name="eye" className="h-4 w-4" />预览</Button>
+                  <Button variant="outline" className="gap-2 rounded-xl"><Icon name="refresh" className="h-4 w-4" />重跑</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        <section className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <Metric label="待填项" value="158" hint="126 个占位符 · 32 个表格字段" />
+          <Metric label="AI 置信度" value="91.4%" hint="低置信字段需人工确认" />
+          <Metric label="模板产物" value="2" hint="商务标 / 技术标" />
+          <Metric label="校验测试" value={`${passedTests}/${testResults.length}`} hint="内置数据契约测试通过数" />
+        </section>
+
+        <section className="mt-6 grid grid-cols-12 gap-6">
+          <Card className="col-span-12 rounded-3xl border border-slate-200 shadow-sm xl:col-span-8">
+            <CardContent className="p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 text-xl font-semibold"><Icon name="workflow" className="h-5 w-5" />待填项审核</div>
+                  <div className="mt-1 text-sm text-slate-500">从 待填项清单.json 与 AI填充结果.json 合并展示，支持人工修订后再回填 DOCX。</div>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">
+                  <Icon name="search" className="h-4 w-4" /> 搜索字段、来源、内容
+                </div>
+              </div>
+
+              <div className="mt-5 overflow-x-auto rounded-2xl border border-slate-200">
+                <table className="w-full min-w-[760px] text-left text-sm">
+                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="px-4 py-3">字段</th>
+                      <th className="px-4 py-3">来源</th>
+                      <th className="px-4 py-3">AI 填充值</th>
+                      <th className="px-4 py-3">置信度</th>
+                      <th className="px-4 py-3">状态</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {fillItems.map((item) => (
+                      <tr key={item.key} className="hover:bg-slate-50/70">
+                        <td className="px-4 py-4">
+                          <div className="font-medium text-slate-900">{item.label}</div>
+                          <div className="text-xs text-slate-400">{item.key}</div>
+                        </td>
+                        <td className="px-4 py-4 text-slate-600">{item.source}</td>
+                        <td className="max-w-xs px-4 py-4 text-slate-700">{item.value}</td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-20 overflow-hidden rounded-full bg-slate-100">
+                              <div className="h-full rounded-full bg-slate-900" style={{ width: `${item.confidence}%` }} />
+                            </div>
+                            <span className="text-xs text-slate-500">{item.confidence}%</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", item.risk === "low" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700")}>
+                            {item.risk === "low" ? "可自动回填" : "建议复核"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="col-span-12 space-y-6 xl:col-span-4">
+            <Card className="rounded-3xl border border-slate-200 shadow-sm">
+              <CardContent className="p-6">
+                <div className="text-xl font-semibold">产物中心</div>
+                <div className="mt-4 space-y-3">
+                  {["商务标模版.docx", "技术标模版.docx", "待填项清单.json", "AI填充结果.json", "已填充商务标.docx"].map((name, index) => (
+                    <div key={name} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100">
+                          <Icon name={name.endsWith("json") ? "braces" : "file"} className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium">{name}</div>
+                          <div className="text-xs text-slate-400">{index < 4 ? "已生成" : "等待回填"}</div>
+                        </div>
+                      </div>
+                      <Button size="icon" variant="ghost" className="rounded-xl"><Icon name="download" className="h-4 w-4" /></Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl border border-slate-200 shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="text-xl font-semibold">运行日志</div>
+                  <Button variant="ghost" size="sm" className="rounded-xl text-slate-500">全部 <Icon name="chevron" className="ml-1 h-4 w-4" /></Button>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {logs.map((log) => (
+                    <div key={log} className="rounded-2xl bg-slate-950 px-4 py-3 font-mono text-xs leading-5 text-slate-200">
+                      {log}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}

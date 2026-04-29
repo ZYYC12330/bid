@@ -1,0 +1,2973 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI 标书生成平台</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f8fb;
+        --panel: #ffffff;
+        --ink: #111827;
+        --muted: #667085;
+        --subtle: #98a2b3;
+        --line: #e4e7ec;
+        --soft: #f2f4f7;
+        --blue: #2563eb;
+        --blue-soft: #eff6ff;
+        --green: #079455;
+        --green-soft: #ecfdf3;
+        --green-strong: #067647;
+        --amber: #dc6803;
+        --amber-soft: #fffaeb;
+        --purple: #7c3aed;
+        --purple-soft: #f5f3ff;
+        --cyan: #0891b2;
+        --cyan-soft: #ecfeff;
+        --shadow: 0 14px 36px rgba(16, 24, 40, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        letter-spacing: 0;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.88);
+        backdrop-filter: blur(16px);
+      }
+
+      .topbar-inner,
+      .shell {
+        width: min(1320px, calc(100vw - 48px));
+        margin: 0 auto;
+      }
+
+      .topbar-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 16px 0;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .brand-mark {
+        width: 40px;
+        height: 40px;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        background: var(--ink);
+        color: white;
+        flex: 0 0 auto;
+      }
+
+      .brand-title {
+        font-size: 18px;
+        font-weight: 750;
+      }
+
+      .brand-subtitle {
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .stepper {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(130px, 1fr));
+        gap: 10px;
+        width: min(640px, 58vw);
+      }
+
+      .step {
+        min-height: 58px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+        padding: 10px;
+      }
+
+      .step-number {
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        background: var(--soft);
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 750;
+        flex: 0 0 auto;
+      }
+
+      .step.active {
+        border-color: #bfdbfe;
+        background: var(--blue-soft);
+      }
+
+      .step.active .step-number {
+        background: var(--blue);
+        color: #fff;
+      }
+
+      .step.done .step-number {
+        background: var(--green);
+        color: #fff;
+      }
+
+      .step-label {
+        min-width: 0;
+      }
+
+      .step-title {
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      .step-desc {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .shell {
+        padding: 28px 0 36px;
+      }
+
+      .upload-first {
+        min-height: calc(100vh - 110px);
+        display: grid;
+        place-items: center;
+      }
+
+      .upload-card {
+        width: min(720px, 100%);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        padding: 34px;
+      }
+
+      .upload-heading {
+        margin: 0;
+        font-size: 26px;
+        line-height: 1.24;
+        text-align: center;
+      }
+
+      .upload-copy {
+        max-width: 520px;
+        margin: 12px auto 24px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+        text-align: center;
+      }
+
+      .drop-zone {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 260px;
+        border: 1px dashed #b8c4d6;
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 28px;
+        text-align: center;
+        transition: border-color 0.15s ease, background 0.15s ease;
+      }
+
+      .drop-zone:hover,
+      .drop-zone.dragging {
+        border-color: var(--blue);
+        background: #f8fbff;
+      }
+
+      .file-input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .upload-icon {
+        width: 58px;
+        height: 58px;
+        display: grid;
+        place-items: center;
+        margin: 0 auto 14px;
+        border-radius: 8px;
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .drop-title {
+        font-size: 16px;
+        font-weight: 750;
+      }
+
+      .drop-hint {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.72fr) minmax(360px, 0.78fr);
+        grid-template-rows: auto auto auto;
+        gap: 16px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+      }
+
+      .preview-panel {
+        min-height: 720px;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+
+      .side-panel {
+        min-height: 720px;
+        display: grid;
+        grid-template-rows: auto auto auto auto auto minmax(0, 1fr);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid var(--line);
+        padding: 16px 18px;
+      }
+
+      .panel-title {
+        font-size: 16px;
+        font-weight: 760;
+      }
+
+      .panel-subtitle {
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--soft);
+        color: var(--muted);
+        padding: 5px 9px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .badge.green {
+        border-color: #abefc6;
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .badge.blue {
+        border-color: #bfdbfe;
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .badge.amber {
+        border-color: #fedf89;
+        background: var(--amber-soft);
+        color: var(--amber);
+      }
+
+      .preview-body {
+        padding: 18px;
+      }
+
+      .panel-tabs {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--soft);
+        padding: 4px;
+      }
+
+      .panel-tab {
+        min-height: 32px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted);
+        padding: 0 12px;
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      .panel-tab.active {
+        background: #fff;
+        color: var(--ink);
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+      }
+
+      .knowledge-body {
+        display: grid;
+        gap: 16px;
+      }
+
+      .knowledge-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 190px minmax(0, 1.15fr) auto;
+        gap: 12px;
+        align-items: end;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: linear-gradient(180deg, #fbfcfe 0%, #fff 100%);
+        padding: 16px;
+      }
+
+      .knowledge-form.compact {
+        gap: 10px;
+        background: #fff;
+        padding: 12px;
+      }
+
+      .knowledge-form-head {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 2px;
+      }
+
+      .knowledge-form-title {
+        font-size: 13px;
+        font-weight: 780;
+      }
+
+      .knowledge-form-note {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .form-field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .form-label {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .knowledge-form input,
+      .knowledge-form select,
+      .knowledge-form textarea,
+      .knowledge-item input,
+      .knowledge-item select,
+      .knowledge-item textarea {
+        width: 100%;
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+        padding: 11px 12px;
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .knowledge-form input:focus,
+      .knowledge-form select:focus,
+      .knowledge-form textarea:focus,
+      .knowledge-item input:focus,
+      .knowledge-item select:focus,
+      .knowledge-item textarea:focus {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+
+      .knowledge-form textarea,
+      .knowledge-item textarea {
+        min-height: 86px;
+        resize: vertical;
+        line-height: 1.5;
+      }
+
+      .knowledge-form.compact input,
+      .knowledge-form.compact select,
+      .knowledge-form.compact textarea {
+        padding: 8px 10px;
+        font-size: 13px;
+      }
+
+      .knowledge-form.compact textarea {
+        min-height: 38px;
+        max-height: 74px;
+      }
+
+      .knowledge-content-field {
+        grid-column: 1 / 3;
+      }
+
+      .knowledge-image-field {
+        grid-column: 1 / 3;
+      }
+
+      .knowledge-form.compact .knowledge-content-field,
+      .knowledge-form.compact .knowledge-image-field {
+        grid-column: auto;
+        min-width: 0;
+      }
+
+      .image-upload {
+        display: grid;
+        gap: 10px;
+      }
+
+      .image-upload input[type="file"] {
+        padding: 9px 12px;
+      }
+
+      .image-preview {
+        min-height: 86px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 8px;
+        background: #f8fafc;
+        padding: 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .image-preview img {
+        width: 84px;
+        height: 64px;
+        flex: 0 0 auto;
+        object-fit: contain;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+      }
+
+      .image-preview strong {
+        display: block;
+        color: var(--ink);
+        font-size: 13px;
+        margin-bottom: 2px;
+      }
+
+      .icon-btn {
+        width: 42px;
+        height: 42px;
+        display: inline-grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: #344054;
+      }
+
+      .icon-btn:hover {
+        background: var(--soft);
+      }
+
+      .icon-btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.42;
+      }
+
+      .icon-btn.primary {
+        border-color: transparent;
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .icon-btn.primary:hover {
+        background: #1f2937;
+      }
+
+      .icon-btn.primary:disabled:hover {
+        background: var(--ink);
+      }
+
+      .icon-btn.danger {
+        background: #fff;
+        color: #b42318;
+      }
+
+      .icon-btn.danger:hover {
+        border-color: #fecdca;
+        background: #fffbfa;
+      }
+
+      .icon-btn.sync {
+        color: var(--blue);
+      }
+
+      .icon-btn.sync:hover {
+        border-color: #bfdbfe;
+        background: var(--blue-soft);
+      }
+
+      .add-knowledge-btn {
+        width: 38px;
+        height: 38px;
+        align-self: end;
+      }
+
+      .knowledge-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .knowledge-item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 170px auto;
+        gap: 12px;
+        align-items: end;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 14px;
+      }
+
+      .knowledge-item.compact {
+        grid-template-columns: minmax(150px, 1fr) 132px minmax(210px, 1.25fr) auto;
+        gap: 10px;
+        align-items: end;
+        padding: 10px 12px;
+      }
+
+      .knowledge-actions {
+        display: flex;
+        gap: 8px;
+        align-items: end;
+      }
+
+      .knowledge-actions .icon-btn {
+        width: 38px;
+        height: 38px;
+      }
+
+      .knowledge-item.compact input,
+      .knowledge-item.compact select,
+      .knowledge-item.compact textarea {
+        padding: 8px 10px;
+        font-size: 13px;
+      }
+
+      .knowledge-item.compact textarea {
+        min-height: 38px;
+        max-height: 74px;
+      }
+
+      .knowledge-inline-content {
+        min-width: 0;
+      }
+
+      .knowledge-item.compact .image-upload {
+        gap: 6px;
+      }
+
+      .knowledge-form.compact .image-upload {
+        gap: 6px;
+      }
+
+      .knowledge-form.compact .image-preview,
+      .knowledge-item.compact .image-preview {
+        min-height: 38px;
+        padding: 6px 8px;
+      }
+
+      .knowledge-form.compact .image-preview img,
+      .knowledge-item.compact .image-preview img {
+        width: 48px;
+        height: 36px;
+      }
+
+      .knowledge-form.compact .image-preview strong,
+      .knowledge-item.compact .image-preview strong {
+        font-size: 12px;
+      }
+
+      .knowledge-item:hover {
+        border-color: #d0d5dd;
+        box-shadow: 0 8px 22px rgba(16, 24, 40, 0.05);
+      }
+
+      .document-sheet {
+        min-height: 485px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        overflow: hidden;
+      }
+
+      .word-preview-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        border-bottom: 1px solid var(--line);
+        background: #fbfcfe;
+        padding: 14px 16px;
+      }
+
+      .word-file {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .word-file-icon {
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        background: var(--blue-soft);
+        color: var(--blue);
+        flex: 0 0 auto;
+      }
+
+      .doc-chip {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .doc-title {
+        margin-top: 3px;
+        font-size: 16px;
+        font-weight: 760;
+        line-height: 1.35;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .word-preview-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 0 0 auto;
+      }
+
+      .word-preview-main {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        min-height: 600px;
+        padding: 16px;
+      }
+
+      .doc-meta {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .meta-box {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 12px;
+      }
+
+      .meta-label {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .meta-value {
+        margin-top: 4px;
+        font-size: 14px;
+        font-weight: 730;
+        word-break: break-word;
+      }
+
+      .word-frame {
+        height: 640px;
+        min-height: 320px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #eef2f7;
+        overflow: auto;
+      }
+
+      .word-frame-title {
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .word-object {
+        width: 100%;
+        height: 100%;
+        min-height: 320px;
+        border: 0;
+        background: #fff;
+      }
+
+      .word-render-root {
+        min-height: 100%;
+      }
+
+      .word-render-root .docx-wrapper {
+        background: #eef2f7;
+        padding: 18px 0;
+      }
+
+      .word-render-root .docx {
+        box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
+      }
+
+      .word-fallback {
+        height: 100%;
+        min-height: 320px;
+        display: grid;
+        place-items: center;
+        padding: 28px;
+        color: var(--muted);
+        text-align: center;
+        line-height: 1.7;
+      }
+
+      .word-fallback.loading {
+        background: linear-gradient(90deg, #f8fafc 0%, #fff 48%, #f8fafc 100%);
+      }
+
+      .word-fallback strong {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--ink);
+      }
+
+      .search {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .project-info-card {
+        display: grid;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+        padding: 14px 18px;
+        background: #fbfcfe;
+      }
+
+      .project-info-row {
+        display: grid;
+        gap: 5px;
+      }
+
+      .project-info-label {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .project-info-value {
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 760;
+        line-height: 1.45;
+        word-break: break-word;
+      }
+
+      .project-info-value.pending {
+        color: var(--muted);
+        font-weight: 650;
+      }
+
+      .upload-progress {
+        display: grid;
+        gap: 9px;
+        border-bottom: 1px solid var(--line);
+        padding: 14px 18px;
+      }
+
+      .progress-step {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 9px;
+        align-items: start;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+      }
+
+      .progress-step strong {
+        display: block;
+        color: var(--ink);
+        font-size: 13px;
+      }
+
+      .progress-dot {
+        width: 10px;
+        height: 10px;
+        margin-top: 4px;
+        border-radius: 999px;
+        background: var(--line);
+      }
+
+      .progress-step.active .progress-dot {
+        background: var(--blue);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+      }
+
+      .progress-step.done .progress-dot {
+        background: var(--green);
+      }
+
+      .progress-step.error .progress-dot {
+        background: #d92d20;
+      }
+
+      .field-toolbar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 12px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .field-toolbar select {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+        padding: 10px;
+        outline: none;
+      }
+
+      .search input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 11px 12px;
+        color: var(--ink);
+        outline: none;
+      }
+
+      .extract-list {
+        overflow: auto;
+        padding: 10px;
+      }
+
+      .extract-summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .summary-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 10px;
+      }
+
+      .summary-label {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .summary-value {
+        margin-top: 4px;
+        font-size: 18px;
+        font-weight: 780;
+      }
+
+      .section-group {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        margin-bottom: 10px;
+        overflow: hidden;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        background: #fbfcfe;
+        border-bottom: 1px solid var(--line);
+        padding: 10px 12px;
+      }
+
+      .section-title {
+        font-size: 13px;
+        font-weight: 780;
+      }
+
+      .extract-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 12px;
+        align-items: start;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      .extract-item:hover {
+        border-color: var(--line);
+        background: #fbfcfe;
+      }
+
+      .check {
+        width: 18px;
+        height: 18px;
+        margin-top: 2px;
+        accent-color: var(--blue);
+      }
+
+      .item-title {
+        font-size: 14px;
+        font-weight: 730;
+      }
+
+      .item-desc {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .item-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .manual-value-input {
+        width: 100%;
+        min-height: 34px;
+        margin-top: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+        padding: 7px 10px;
+        font-size: 12px;
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .manual-value-input:focus {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      }
+
+      .manual-image-value {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .manual-image-value input[type="file"] {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 9px 12px;
+        background: #fff;
+        font-size: 13px;
+      }
+
+      .mini-chip {
+        border: 1px solid transparent;
+        border-radius: 999px;
+        background: var(--soft);
+        color: var(--muted);
+        padding: 3px 7px;
+        font-size: 11px;
+        line-height: 1.35;
+      }
+
+      .mini-chip.source-tender {
+        border-color: #ddd6fe;
+        background: var(--purple-soft);
+        color: var(--purple);
+      }
+
+      .mini-chip.source-company {
+        border-color: #bfdbfe;
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .mini-chip.source-qualification {
+        border-color: #abefc6;
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .mini-chip.source-case {
+        border-color: #a5f3fc;
+        background: var(--cyan-soft);
+        color: var(--cyan);
+      }
+
+      .empty-state {
+        border: 1px dashed #b8c4d6;
+        border-radius: 8px;
+        background: #fbfcfe;
+        color: var(--muted);
+        padding: 28px 18px;
+        text-align: center;
+        line-height: 1.7;
+      }
+
+      .error-text {
+        color: #b42318;
+      }
+
+      .footer-panel {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 16px 18px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: var(--ink);
+        color: #fff;
+        padding: 0 16px;
+        font-weight: 750;
+        transition: background 0.15s ease, transform 0.15s ease;
+      }
+
+      .btn:hover {
+        background: #1f2937;
+      }
+
+      .btn:active {
+        transform: translateY(1px);
+      }
+
+      .btn.secondary {
+        border-color: var(--line);
+        background: #fff;
+        color: #344054;
+      }
+
+      .btn.secondary:hover {
+        background: var(--soft);
+      }
+
+      .btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+        transform: none;
+      }
+
+      .stage-page {
+        min-height: 560px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        padding: 32px;
+      }
+
+      .stage-page h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+
+      .stage-page p {
+        max-width: 720px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .stage-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 24px;
+      }
+
+      .stage-grid.result-mode {
+        grid-template-columns: 1fr;
+      }
+
+      .stage-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 16px;
+      }
+
+      .result-panel {
+        display: grid;
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .result-download {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 16px;
+        border: 1px solid #abefc6;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #f6fef9 0%, #ecfdf3 100%);
+        padding: 20px;
+      }
+
+      .result-download.pending {
+        border-color: #bfdbfe;
+        background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
+      }
+
+      .result-download-icon {
+        width: 48px;
+        height: 48px;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        background: var(--green);
+        color: #fff;
+      }
+
+      .result-download.pending .result-download-icon {
+        background: var(--blue);
+      }
+
+      .spinner {
+        width: 22px;
+        height: 22px;
+        border: 3px solid rgba(255, 255, 255, 0.42);
+        border-top-color: #fff;
+        border-radius: 999px;
+        animation: spin 0.85s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .result-download-title {
+        font-size: 18px;
+        font-weight: 780;
+      }
+
+      .result-download-desc {
+        margin-top: 6px;
+        color: #475467;
+        font-size: 13px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+
+      .result-download-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .btn.success {
+        background: var(--green-strong);
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(7, 148, 85, 0.22);
+      }
+
+      .btn.success:hover {
+        background: #05603a;
+      }
+
+      .result-files {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .log-progress {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 16px;
+      }
+
+      .log-progress-title {
+        font-size: 14px;
+        font-weight: 780;
+      }
+
+      .log-progress-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .log-progress-item {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .log-dot {
+        width: 9px;
+        height: 9px;
+        margin-top: 5px;
+        border-radius: 999px;
+        background: #d0d5dd;
+      }
+
+      .log-progress-item.done .log-dot {
+        background: var(--green);
+      }
+
+      .log-progress-item.active .log-dot {
+        background: var(--blue);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+      }
+
+      .log-progress-message {
+        color: var(--ink);
+        font-weight: 650;
+      }
+
+      .log-progress-time {
+        white-space: nowrap;
+      }
+
+      .result-file {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 14px;
+      }
+
+      .result-file-title {
+        font-size: 13px;
+        font-weight: 760;
+      }
+
+      .result-file-path {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      svg {
+        width: 18px;
+        height: 18px;
+        display: block;
+      }
+
+      @media (max-width: 980px) {
+        .topbar-inner {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .stepper {
+          width: 100%;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .footer-panel {
+          grid-column: auto;
+        }
+
+        .side-panel,
+        .preview-panel {
+          min-height: auto;
+        }
+
+        .stage-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .result-download {
+          grid-template-columns: 1fr;
+          align-items: start;
+        }
+
+        .result-download-actions {
+          justify-content: flex-start;
+        }
+
+        .result-files {
+          grid-template-columns: 1fr;
+        }
+
+        .extract-summary {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 640px) {
+        .topbar-inner,
+        .shell {
+          width: min(100vw - 28px, 1180px);
+        }
+
+        .topbar-inner {
+          gap: 12px;
+          padding: 12px 0;
+        }
+
+        .brand-mark {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+        }
+
+        .brand-title {
+          font-size: 17px;
+        }
+
+        .brand-subtitle {
+          white-space: normal;
+        }
+
+        .shell {
+          padding: 16px 0 26px;
+        }
+
+        .stepper {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 6px;
+        }
+
+        .step {
+          min-width: 0;
+          min-height: 42px;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          gap: 4px;
+          padding: 8px 4px;
+        }
+
+        .step-number {
+          width: 24px;
+          height: 24px;
+          font-size: 12px;
+        }
+
+        .step-title {
+          font-size: 11px;
+          line-height: 1.2;
+          text-align: center;
+          white-space: nowrap;
+        }
+
+        .step-label {
+          display: none;
+        }
+
+        .step-desc {
+          display: none;
+        }
+
+        .upload-first {
+          min-height: auto;
+        }
+
+        .upload-card {
+          padding: 22px;
+        }
+
+        .upload-heading {
+          font-size: 24px;
+        }
+
+        .drop-zone {
+          min-height: 220px;
+        }
+
+        .footer-panel {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .doc-meta {
+          grid-template-columns: 1fr;
+        }
+
+        .word-preview-head {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .word-preview-actions {
+          width: 100%;
+        }
+
+        .word-preview-actions .btn {
+          flex: 1;
+        }
+
+        .field-toolbar,
+        .extract-summary,
+        .knowledge-form,
+        .knowledge-item {
+          grid-template-columns: 1fr;
+        }
+
+        .knowledge-item.compact {
+          grid-template-columns: 1fr;
+        }
+
+        .knowledge-content-field {
+          grid-column: auto;
+        }
+
+        .panel-head {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .panel-tabs {
+          width: 100%;
+        }
+
+        .panel-tab {
+          flex: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <div class="brand">
+            <div class="brand-mark" data-icon="file"></div>
+            <div>
+              <div class="brand-title">AI 标书生成平台</div>
+              <div class="brand-subtitle">上传招标文件后，按步骤完成提取、确认、填充与生成</div>
+            </div>
+          </div>
+          <div class="stepper" id="stepper"></div>
+        </div>
+      </header>
+
+      <main class="shell">
+        <section class="upload-first" id="uploadFirst">
+          <div class="upload-card">
+            <h1 class="upload-heading">上传招标文件</h1>
+            <p class="upload-copy">请选择招标文件 DOCX。上传后系统进入第 1 步，先展示文件预览和待提取项，再由你确认进入下一步。</p>
+            <label class="drop-zone" id="dropZone">
+              <input class="file-input" id="fileInput" type="file" accept=".docx" />
+              <span>
+                <span class="upload-icon" data-icon="upload"></span>
+                <span class="drop-title">点击或拖拽上传招标文件</span>
+                <span class="drop-hint">支持 .docx，上传后自动识别项目名称和关键待提取项</span>
+              </span>
+            </label>
+          </div>
+        </section>
+
+        <section class="layout hidden" id="stageOne">
+          <section class="panel preview-panel">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title" id="primaryPanelTitle">文件预览</div>
+                <div class="panel-subtitle" id="primaryPanelSubtitle">先确认上传文件是否正确，再进入下一步</div>
+              </div>
+              <div class="panel-tabs" aria-label="资料区域切换">
+                <button class="panel-tab active" type="button" data-preview-tab="file">文件预览</button>
+                <button class="panel-tab" type="button" data-preview-tab="knowledge">知识库</button>
+              </div>
+            </div>
+            <div class="preview-body" id="filePreviewPane">
+              <div class="document-sheet">
+                <div class="word-preview-head">
+                  <div class="word-file">
+                    <div class="word-file-icon" data-icon="file"></div>
+                    <div>
+                      <div class="doc-chip" id="fileName">未选择文件</div>
+                      <div class="doc-title" id="previewTitle">Word 文件预览</div>
+                    </div>
+                  </div>
+                  <div class="word-preview-actions">
+                    <a class="btn secondary hidden" id="downloadWordButton" href="#" download>下载</a>
+                  </div>
+                </div>
+                <div class="word-preview-main">
+                  <div class="doc-meta">
+                    <div class="meta-box">
+                      <div class="meta-label">文件大小</div>
+                      <div class="meta-value" id="fileSize">-</div>
+                    </div>
+                    <div class="meta-box">
+                      <div class="meta-label">识别状态</div>
+                      <div class="meta-value" id="recognitionStatus">AI 识别中</div>
+                    </div>
+                    <div class="meta-box">
+                      <div class="meta-label">文档类型</div>
+                      <div class="meta-value">Word DOCX</div>
+                    </div>
+                    <div class="meta-box">
+                      <div class="meta-label">下一动作</div>
+                      <div class="meta-value">确认待提取项</div>
+                    </div>
+                  </div>
+                  <div class="word-frame-title">Word 文件预览</div>
+                  <div class="word-frame" id="wordPreviewFrame">
+                    <div class="word-fallback">
+                      <div>
+                        <strong>Word 文件预览</strong>
+                        <span id="wordPreviewHint">上传 DOCX 后，可在这里查看或打开原始 Word 文件。</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="preview-body hidden" id="knowledgePane">
+              <div class="knowledge-body">
+                <div class="knowledge-form compact">
+                  <div class="knowledge-form-head">
+                    <div class="knowledge-form-title">新增资料</div>
+                    <div class="knowledge-form-note">填写后加入本次标书生成上下文</div>
+                  </div>
+                  <label class="form-field">
+                    <span class="form-label">资料名称</span>
+                    <input id="knowledgeNameInput" type="text" placeholder="例如：企业简介、资质证书、项目业绩" />
+                  </label>
+                  <label class="form-field">
+                    <span class="form-label">字段类型</span>
+                    <select id="knowledgeTypeInput" aria-label="字段类型">
+                      <option value="TEXT">TEXT</option>
+                      <option value="Image">Image</option>
+                    </select>
+                  </label>
+                  <label class="form-field knowledge-content-field" id="knowledgeContentField">
+                    <span class="form-label">内容</span>
+                    <textarea id="knowledgeContentInput" placeholder="填写可用于生成标书的资料内容"></textarea>
+                  </label>
+                  <label class="form-field knowledge-image-field hidden" id="knowledgeImageField">
+                    <span class="form-label">图片文件</span>
+                    <span class="image-upload">
+                      <input id="knowledgeImageInput" type="file" accept="image/*" />
+                      <span class="image-preview" id="knowledgeImagePreview">选择图片后会显示预览，并同步到同名图片字段。</span>
+                    </span>
+                  </label>
+                  <button class="icon-btn primary add-knowledge-btn" id="addKnowledgeButton" type="button" title="新增知识库条目" aria-label="新增知识库条目">
+                    <span data-icon="plus"></span>
+                  </button>
+                </div>
+                <div class="knowledge-list" id="knowledgeList"></div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="panel side-panel">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">待提取项列表</div>
+                <div class="panel-subtitle">默认勾选推荐字段，可在下一步细化</div>
+              </div>
+              <span class="badge green" id="itemCount">8 项</span>
+            </div>
+            <div class="project-info-card">
+              <div class="project-info-row">
+                <div class="project-info-label">招标编号</div>
+                <div class="project-info-value pending" id="bidNumberValue">等待上传</div>
+              </div>
+              <div class="project-info-row">
+                <div class="project-info-label">项目名称</div>
+                <div class="project-info-value pending" id="projectNameValue">等待上传</div>
+              </div>
+            </div>
+            <div class="upload-progress" id="uploadProgress">
+              <div class="progress-step active"><span class="progress-dot"></span><span><strong>AI解析</strong>等待上传招标文件</span></div>
+              <div class="progress-step"><span class="progress-dot"></span><span><strong>生成商务标模版</strong>等待上传招标文件</span></div>
+              <div class="progress-step"><span class="progress-dot"></span><span><strong>提取待填写字段</strong>等待上传招标文件</span></div>
+            </div>
+            <div class="search">
+              <input id="searchInput" type="text" placeholder="搜索字段，例如：项目名称、投标人、工期" />
+            </div>
+            <div class="field-toolbar">
+              <select id="sectionFilter" aria-label="按章节筛选">
+                <option value="">全部章节</option>
+              </select>
+              <select id="typeFilter" aria-label="按字段类型筛选">
+                <option value="">全部类型</option>
+              </select>
+            </div>
+            <div class="extract-list" id="extractList"></div>
+          </aside>
+
+          <footer class="panel footer-panel">
+            <div class="panel-subtitle" id="footerHint">确认文件和待提取项后，点击下一步进入字段确认。</div>
+            <button class="btn" id="nextButton" type="button">下一步 <span data-icon="arrow"></span></button>
+          </footer>
+        </section>
+
+        <section class="stage-page hidden" id="laterStage">
+          <h1 id="laterTitle">第二步：确认提取项</h1>
+          <p id="laterCopy">请检查第 1 步选择的待提取字段。确认后系统会回填 Word，并输出可下载的标书 DOCX。</p>
+          <div class="stage-grid" id="stageGrid"></div>
+          <div class="footer-panel" style="padding: 24px 0 0">
+            <button class="btn secondary" id="backButton" type="button">上一步</button>
+            <button class="btn" id="laterNextButton" type="button">下一步 <span data-icon="arrow"></span></button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./vendor/jszip.min.js"></script>
+    <script src="./vendor/docx-preview.min.js"></script>
+    <script src="./knowledge-utils.js"></script>
+    <script>
+      const icons = {
+        upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8 12 3 7 8"/><path d="M12 3v12"/>',
+        file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>',
+        download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>',
+        check: '<path d="m20 6-11 11-5-5"/>',
+        arrow: '<path d="M5 12h14"/><path d="m13 5 7 7-7 7"/>',
+        plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+        save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/>',
+        trash: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+        bot: '<rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 4v4"/><path d="M8 2h8"/><path d="M9 14h.01"/><path d="M15 14h.01"/><path d="M9 18h6"/>',
+      };
+
+      const stages = [
+        { id: 1, title: "上传文件", desc: "识别项目信息" },
+        { id: 2, title: "确认提取项", desc: "选择字段范围" },
+        { id: 3, title: "生成标书", desc: "导出 DOCX" },
+      ];
+
+      const state = {
+        stage: 1,
+        uploaded: false,
+        file: null,
+        projectName: "",
+        projectInfo: {
+          bidNumber: "",
+          projectName: "",
+          confidence: 0,
+          evidence: [],
+        },
+        metadataLoading: false,
+        metadataErrorText: "",
+        extractLoading: false,
+        loading: false,
+        statusText: "",
+        errorText: "",
+        fillResult: null,
+        fillLogs: [],
+        fillStartedAt: 0,
+        fillProgressTimer: null,
+        templateUrls: null,
+        extractResult: null,
+        fieldItems: [],
+        selectedIds: new Set(),
+        wordPreviewUrl: "",
+        wordPreviewStatus: "idle",
+        wordPreviewRenderedFile: null,
+        wordPreviewRenderToken: 0,
+        activePreviewTab: "file",
+        nextKnowledgeId: 1,
+        knowledgeLoading: false,
+        knowledgeErrorText: "",
+        knowledgeDraft: {
+          name: "",
+          type: "TEXT",
+          content: "",
+          imageUrl: "",
+          fileName: "",
+        },
+        knowledgeItems: [],
+        knowledgeTypeChoices: ["TEXT", "Image"],
+        filters: {
+          section: "",
+          type: "",
+          query: "",
+        },
+      };
+
+      function icon(name) {
+        return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.file}</svg>`;
+      }
+
+      function hydrateIcons(root = document) {
+        root.querySelectorAll("[data-icon]").forEach((node) => {
+          node.innerHTML = icon(node.getAttribute("data-icon"));
+        });
+      }
+
+      function renderStepper() {
+        document.getElementById("stepper").innerHTML = stages.map((step) => {
+          const cls = step.id === state.stage ? "active" : step.id < state.stage ? "done" : "";
+          const mark = step.id < state.stage ? icon("check") : step.id;
+          return `
+            <div class="step ${cls}">
+              <div class="step-number">${mark}</div>
+              <div class="step-label">
+                <div class="step-title">${step.title}</div>
+                <div class="step-desc">${step.desc}</div>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function inferProjectName(fileName) {
+        const clean = fileName
+          .replace(/\.(docx|doc)$/i, "")
+          .replace(/[-_]*招标文件[-_]*发布版.*$/i, "")
+          .replace(/^\s*GKZH-\d+[A-Z]*\d*[-_]?/i, "")
+          .replace(/\s+/g, " ")
+          .trim();
+        const match = clean.match(/([0-9.]+项目[^-_/（(]*)/);
+        return (match ? match[1] : clean || "待识别项目").trim();
+      }
+
+      function formatSize(bytes) {
+        if (!bytes) return "-";
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function sourceLabel(source) {
+        const map = {
+          tender_requirements: "招标要求",
+          tender_requirements_kb: "招标要求",
+          bidder_profile: "投标人资料",
+          credential_index: "资质索引",
+          quotation: "报价信息",
+          company_profile: "企业资料",
+          company_profile_kb: "企业资料",
+          qualification_materials_kb: "资质材料",
+          case_performance_kb: "案例业绩",
+          manual_confirm: "人工确认",
+          license: "证照资料",
+        };
+        return map[source] || source;
+      }
+
+      function sourcePreferenceClass(source) {
+        const label = sourceLabel(source);
+        if (label === "招标要求") return "source-tender";
+        if (label === "企业资料") return "source-company";
+        if (label === "资质材料") return "source-qualification";
+        if (label === "案例业绩") return "source-case";
+        return "";
+      }
+
+      function blockTypeLabel(blockType) {
+        const map = {
+          paragraph_placeholder: "段落占位符",
+          paragraph_colon: "冒号字段",
+          table_cell: "表格单元格",
+          image_placeholder: "图片占位框",
+        };
+        return map[blockType] || blockType || "未知位置";
+      }
+
+      function isHttpUrl(value) {
+        return /^https?:\/\//i.test(String(value || ""));
+      }
+
+      function normalizeFieldItem(item) {
+        const locator = item.locator || {};
+        const fieldName = item.field_name || item.field || item.item_id || "未命名字段";
+        return {
+          id: item.item_id || `${fieldName}-${locator.paragraph_index ?? ""}-${locator.table_index ?? ""}-${locator.row_index ?? ""}-${locator.cell_index ?? ""}`,
+          section: item.section || "未分章节",
+          fieldName,
+          fieldType: KnowledgeUtils.formatFieldType(item.field_type || "TEXT"),
+          required: item.required !== false,
+          placeholderText: item.placeholder_text || locator.placeholder_text || locator.label_text || "",
+          promptHint: item.prompt_hint || "",
+          sourcePreference: Array.isArray(item.source_preference) ? item.source_preference : [],
+          manualValue: item.manual_value || item.user_value || "",
+          locator,
+          raw: item,
+        };
+      }
+
+      function buildExtractForm(templateUrl) {
+        const body = new URLSearchParams();
+        body.set("template_url", templateUrl);
+        body.set("template_type", "business");
+        body.set("output_path", "string");
+        return body;
+      }
+
+      function fallbackProjectName() {
+        return state.projectInfo.projectName || state.projectName || "识别中";
+      }
+
+      function updateProjectInfo(projectInfo) {
+        const previousProjectName = state.projectName;
+        state.projectInfo = {
+          bidNumber: projectInfo?.bid_number || projectInfo?.bidNumber || "",
+          projectName: projectInfo?.project_name || projectInfo?.projectName || "",
+          confidence: Number(projectInfo?.confidence || 0),
+          evidence: Array.isArray(projectInfo?.evidence) ? projectInfo.evidence : [],
+        };
+        if (state.projectInfo.projectName) {
+          state.projectName = state.projectInfo.projectName;
+        }
+        applyProjectNameValue(state.projectInfo.projectName || state.projectName, previousProjectName);
+      }
+
+      function normalizeKnowledgeItem(rawItem) {
+        const imageUrl = rawItem?.image_url || rawItem?.imageUrl || "";
+        const content = imageUrl || rawItem?.content || "";
+        return {
+          id: String(rawItem?.id || `kb_${Date.now()}_${state.nextKnowledgeId++}`),
+          name: rawItem?.name || "未命名资料",
+          type: KnowledgeUtils.formatFieldType(rawItem?.type || rawItem?.item_type || "TEXT"),
+          content,
+          imageUrl,
+          fileName: rawItem?.file_name || rawItem?.fileName || KnowledgeUtils.fileNameFromImageContent(content),
+        };
+      }
+
+      async function loadKnowledgeItems() {
+        state.knowledgeLoading = true;
+        state.knowledgeErrorText = "";
+        state.knowledgeItems = [];
+        state.knowledgeLoading = false;
+        render();
+      }
+
+      async function saveKnowledgeItem(item) {
+        return normalizeKnowledgeItem(item);
+      }
+
+      async function createKnowledgeItem(item) {
+        return normalizeKnowledgeItem(item);
+      }
+
+      async function deleteKnowledgeItem(item) {
+        return normalizeKnowledgeItem(item);
+      }
+
+      async function syncKnowledgeItem(item) {
+        const savedItem = await saveKnowledgeItem(item);
+        Object.assign(item, savedItem);
+        syncKnowledgeContentToFields(item);
+        const fieldItem = state.fieldItems.find((entry) => KnowledgeUtils.fieldNamesMatch(entry.fieldName, item.name));
+        if (fieldItem) syncRenderedManualInputs(fieldItem);
+        return item;
+      }
+
+      async function uploadKnowledgeImage(file) {
+        if (!file) return null;
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch("/api/knowledge-images", {
+          method: "POST",
+          body: formData,
+        });
+        return parseJsonResponse(response, "上传知识库图片失败");
+      }
+
+      async function parseJsonResponse(response, fallbackMessage) {
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(payload?.detail || fallbackMessage);
+        }
+        return payload;
+      }
+
+      async function runProjectMetadataFlow(file) {
+        state.metadataLoading = true;
+        state.metadataErrorText = "";
+        render();
+
+        const metadataForm = new FormData();
+        metadataForm.append("file", file);
+
+        try {
+          const response = await fetch("/api/extract-tender-metadata", {
+            method: "POST",
+            body: metadataForm,
+          });
+          const payload = await parseJsonResponse(response, "AI解析失败");
+          updateProjectInfo(payload.project_info || {});
+        } catch (error) {
+          state.metadataErrorText = error instanceof Error ? error.message : String(error);
+        } finally {
+          state.metadataLoading = false;
+          render();
+        }
+      }
+
+      async function runRealExtractFlow(file) {
+        state.extractLoading = true;
+        state.errorText = "";
+        state.statusText = "正在上传招标文件并生成商务标模版...";
+        render();
+
+        const uploadForm = new FormData();
+        uploadForm.append("file", file);
+        uploadForm.append("verbose", "false");
+
+        try {
+          const templateResponse = await fetch("/api/generate-templates", {
+            method: "POST",
+            body: uploadForm,
+          });
+          const templatePayload = await parseJsonResponse(templateResponse, "生成模版失败");
+          const businessTemplateUrl = templatePayload.business_template_url;
+          if (!businessTemplateUrl) {
+            throw new Error("后端未返回 business_template_url。");
+          }
+
+          state.templateUrls = templatePayload;
+          state.statusText = "商务标模版已生成，正在提取真实待填写字段...";
+          render();
+
+          const extractResponse = await fetch("/api/extract-items", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              accept: "application/json",
+            },
+            body: buildExtractForm(businessTemplateUrl),
+          });
+          const extractPayload = await parseJsonResponse(extractResponse, "提取待填写字段失败");
+          const items = (extractPayload.items_json?.items || []).map(normalizeFieldItem);
+
+          state.extractResult = extractPayload;
+          state.fieldItems = items;
+          state.selectedIds = new Set(items.map((item) => item.id));
+          state.knowledgeTypeChoices = KnowledgeUtils.getKnowledgeTypeOptions(items);
+          state.knowledgeItems = KnowledgeUtils.buildKnowledgeItemsFromFields(items, state.nextKnowledgeId, {
+            projectName: fallbackProjectName(),
+          }).map(normalizeKnowledgeItem);
+          state.nextKnowledgeId += state.knowledgeItems.length;
+          state.knowledgeItems.forEach(syncKnowledgeContentToFields);
+          applyProjectNameValue(fallbackProjectName());
+          state.knowledgeDraft = {
+            name: "",
+            type: state.knowledgeTypeChoices[0] || "TEXT",
+            content: "",
+            imageUrl: "",
+            fileName: "",
+          };
+          state.statusText = `已提取 ${items.length} 个真实待填写字段`;
+        } catch (error) {
+          state.errorText = error instanceof Error ? error.message : String(error);
+          state.statusText = "处理失败";
+          state.fieldItems = [];
+          state.selectedIds = new Set();
+          if (!state.knowledgeItems.length) state.knowledgeItems = [];
+          state.knowledgeTypeChoices = ["TEXT", "Image"];
+        } finally {
+          state.extractLoading = false;
+          render();
+        }
+      }
+
+      function handleFile(file) {
+        if (!file) return;
+        if (state.wordPreviewUrl) URL.revokeObjectURL(state.wordPreviewUrl);
+        state.file = file;
+        state.wordPreviewUrl = URL.createObjectURL(file);
+        state.wordPreviewStatus = "idle";
+        state.wordPreviewRenderedFile = null;
+        state.wordPreviewRenderToken += 1;
+        state.uploaded = true;
+        state.stage = 1;
+        state.projectName = inferProjectName(file.name);
+        state.projectInfo = { bidNumber: "", projectName: "", confidence: 0, evidence: [] };
+        state.metadataLoading = false;
+        state.metadataErrorText = "";
+        state.extractLoading = false;
+        state.loading = false;
+        state.statusText = "准备上传";
+        state.errorText = "";
+        state.fillResult = null;
+        state.templateUrls = null;
+        state.extractResult = null;
+        state.fieldItems = [];
+        state.selectedIds = new Set();
+        state.knowledgeItems = KnowledgeUtils.buildDefaultKnowledgeItems(state.nextKnowledgeId, {
+          projectName: state.projectName,
+        }).map(normalizeKnowledgeItem);
+        state.nextKnowledgeId += state.knowledgeItems.length;
+        state.knowledgeTypeChoices = ["TEXT", "Image"];
+        state.knowledgeDraft = { name: "", type: "TEXT", content: "", imageUrl: "", fileName: "" };
+        state.filters = { section: "", type: "", query: "" };
+        render();
+        runProjectMetadataFlow(file);
+        runRealExtractFlow(file);
+      }
+
+      function uniqueValues(items, key) {
+        return [...new Set(items.map((item) => item[key]).filter(Boolean))];
+      }
+
+      function renderSelectOptions(selectId, values, currentValue, defaultLabel) {
+        const select = document.getElementById(selectId);
+        select.innerHTML = [
+          `<option value="">${defaultLabel}</option>`,
+          ...values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`),
+        ].join("");
+        select.value = currentValue;
+      }
+
+      function syncKnowledgeContentToFields(knowledgeItem) {
+        state.fieldItems.forEach((item) => {
+          if (!KnowledgeUtils.fieldNamesMatch(item.fieldName, knowledgeItem.name)) return;
+          item.manualValue = knowledgeItem.content;
+          item.raw.manual_value = knowledgeItem.content;
+        });
+      }
+
+      function applyProjectNameValue(projectName, previousProjectName = "") {
+        const nextProjectName = String(projectName || "").trim();
+        const previous = String(previousProjectName || "").trim();
+        if (!nextProjectName) return;
+        state.fieldItems.forEach((item) => {
+          if (!KnowledgeUtils.isProjectNameField(item.fieldName)) return;
+          if (item.manualValue && item.manualValue !== previous && item.manualValue !== "项目名称待确认") return;
+          item.manualValue = nextProjectName;
+          item.raw.manual_value = nextProjectName;
+        });
+        state.knowledgeItems = state.knowledgeItems.filter((item) => !KnowledgeUtils.isProjectNameField(item.name));
+      }
+
+      function syncKnowledgeContentFromField(fieldItem) {
+        const knowledgeItem = state.knowledgeItems.find((item) => KnowledgeUtils.fieldNamesMatch(item.name, fieldItem.fieldName));
+        if (knowledgeItem) {
+          knowledgeItem.content = fieldItem.manualValue;
+          if (isImageType(knowledgeItem.type)) knowledgeItem.imageUrl = fieldItem.manualValue;
+        }
+      }
+
+      function syncRenderedManualInputs(fieldItem) {
+        state.fieldItems.forEach((item) => {
+          if (!KnowledgeUtils.fieldNamesMatch(item.fieldName, fieldItem.fieldName)) return;
+          const input = document.querySelector(`[data-manual-value-id="${CSS.escape(item.id)}"]`);
+          if (input && input.value !== item.manualValue && input.type !== "file") input.value = item.manualValue;
+        });
+      }
+
+      function renderManualValueControl(item) {
+        if (isImageType(item.fieldType)) {
+          return `
+            <span class="manual-image-value">
+              <input
+                type="file"
+                accept="image/*"
+                data-manual-image-id="${escapeHtml(item.id)}"
+                aria-label="${escapeHtml(item.fieldName)}图片"
+              />
+              ${renderImagePreview(item.manualValue, item.raw?.file_name || item.raw?.fileName || "", `manualImagePreview-${item.id}`)}
+            </span>
+          `;
+        }
+        return `
+          <input
+            class="manual-value-input"
+            type="text"
+            data-manual-value-id="${escapeHtml(item.id)}"
+            value="${escapeHtml(item.manualValue)}"
+            placeholder="输入该字段的填充值"
+            aria-label="${escapeHtml(item.fieldName)}填充值"
+          />
+        `;
+      }
+
+      function filteredFieldItems() {
+        const query = state.filters.query.trim().toLowerCase();
+        return state.fieldItems.filter((item) => {
+          const matchesSection = !state.filters.section || item.section === state.filters.section;
+          const matchesType = !state.filters.type || item.fieldType === state.filters.type;
+          const haystack = [
+            item.id,
+            item.section,
+            item.fieldName,
+            item.fieldType,
+            item.placeholderText,
+            item.promptHint,
+            ...item.sourcePreference,
+            blockTypeLabel(item.locator.block_type),
+          ].join(" ").toLowerCase();
+          return matchesSection && matchesType && (!query || haystack.includes(query));
+        });
+      }
+
+      function groupBySection(items) {
+        return items.reduce((groups, item) => {
+          const key = item.section || "未分章节";
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(item);
+          return groups;
+        }, {});
+      }
+
+      function renderRealExtractItems() {
+        renderSelectOptions("sectionFilter", uniqueValues(state.fieldItems, "section"), state.filters.section, "全部章节");
+        renderSelectOptions("typeFilter", uniqueValues(state.fieldItems, "fieldType"), state.filters.type, "全部类型");
+
+        const selectedCount = state.selectedIds.size;
+        document.getElementById("itemCount").textContent = state.extractLoading ? "提取中" : `${selectedCount}/${state.fieldItems.length} 项`;
+
+        if (state.extractLoading) {
+          document.getElementById("extractList").innerHTML = `<div class="empty-state">正在调用后端生成商务标模版，并从模版中提取真实待填写字段。</div>`;
+          return;
+        }
+
+        if (state.errorText) {
+          document.getElementById("extractList").innerHTML = `<div class="empty-state error-text">${escapeHtml(state.errorText)}</div>`;
+          return;
+        }
+
+        if (!state.fieldItems.length) {
+          document.getElementById("extractList").innerHTML = `<div class="empty-state">尚未返回待填写字段。</div>`;
+          return;
+        }
+
+        const filtered = filteredFieldItems();
+        const grouped = groupBySection(filtered);
+        const imageCount = state.fieldItems.filter((item) => isImageType(item.fieldType)).length;
+        const tableCount = state.fieldItems.filter((item) => item.locator.block_type === "table_cell").length;
+        const summary = `
+          <div class="extract-summary">
+            <div class="summary-card"><div class="summary-label">真实字段</div><div class="summary-value">${state.fieldItems.length}</div></div>
+            <div class="summary-card"><div class="summary-label">已选择</div><div class="summary-value">${selectedCount}</div></div>
+            <div class="summary-card"><div class="summary-label">表格字段</div><div class="summary-value">${tableCount}</div></div>
+            <div class="summary-card"><div class="summary-label">图片字段</div><div class="summary-value">${imageCount}</div></div>
+          </div>
+        `;
+
+        const groupsHtml = Object.entries(grouped).map(([section, items]) => `
+          <div class="section-group">
+            <div class="section-head">
+              <div class="section-title">${escapeHtml(section)}</div>
+              <span class="badge">${items.length} 项</span>
+            </div>
+            ${items.map((item) => `
+              <label class="extract-item">
+                <input class="check" type="checkbox" data-item-id="${escapeHtml(item.id)}" ${state.selectedIds.has(item.id) ? "checked" : ""} />
+                <span>
+                  <span class="item-title">${escapeHtml(item.fieldName)}</span>
+                  <span class="item-desc">${escapeHtml(item.promptHint || item.placeholderText || "从模板定位到的待填写字段")}</span>
+                  <span class="item-meta">
+                    <span class="mini-chip">${escapeHtml(item.id)}</span>
+                    <span class="mini-chip">${escapeHtml(item.fieldType)}</span>
+                    <span class="mini-chip">${escapeHtml(blockTypeLabel(item.locator.block_type))}</span>
+                    ${item.placeholderText ? `<span class="mini-chip">占位：${escapeHtml(item.placeholderText)}</span>` : ""}
+                    ${item.sourcePreference.slice(0, 3).map((source) => `<span class="mini-chip ${sourcePreferenceClass(source)}">${escapeHtml(sourceLabel(source))}</span>`).join("")}
+                  </span>
+                  ${renderManualValueControl(item)}
+                </span>
+                <span class="badge ${state.selectedIds.has(item.id) ? "blue" : ""}">${state.selectedIds.has(item.id) ? "保留" : "跳过"}</span>
+              </label>
+            `).join("")}
+          </div>
+        `).join("");
+
+        document.getElementById("extractList").innerHTML = summary + (groupsHtml || `<div class="empty-state">没有匹配当前筛选条件的字段。</div>`);
+        document.querySelectorAll("[data-item-id]").forEach((input) => {
+          input.addEventListener("change", (event) => {
+            const itemId = event.currentTarget.dataset.itemId;
+            if (event.currentTarget.checked) {
+              state.selectedIds.add(itemId);
+            } else {
+              state.selectedIds.delete(itemId);
+            }
+            renderRealExtractItems();
+          });
+        });
+        document.querySelectorAll("[data-manual-value-id]").forEach((input) => {
+          input.addEventListener("click", (event) => {
+            event.stopPropagation();
+          });
+          input.addEventListener("input", (event) => {
+            const itemId = event.currentTarget.dataset.manualValueId;
+            const item = state.fieldItems.find((entry) => entry.id === itemId);
+            if (!item) return;
+            KnowledgeUtils.propagateManualValue(state.fieldItems, itemId, event.currentTarget.value);
+            syncKnowledgeContentFromField(item);
+            syncRenderedManualInputs(item);
+          });
+        });
+        document.querySelectorAll("[data-manual-image-id]").forEach((input) => {
+          input.addEventListener("click", (event) => {
+            event.stopPropagation();
+          });
+          input.addEventListener("change", async (event) => {
+            const itemId = event.currentTarget.dataset.manualImageId;
+            const item = state.fieldItems.find((entry) => entry.id === itemId);
+            const file = event.currentTarget.files[0];
+            if (!item || !file) return;
+            try {
+              const content = await readImageFile(file);
+              item.manualValue = content;
+              item.raw.manual_value = content;
+              item.raw.file_name = file.name;
+              KnowledgeUtils.propagateManualValue(state.fieldItems, itemId, content);
+              state.fieldItems
+                .filter((entry) => KnowledgeUtils.fieldNamesMatch(entry.fieldName, item.fieldName))
+                .forEach((entry) => {
+                  entry.raw.file_name = file.name;
+                });
+              syncKnowledgeContentFromField(item);
+              renderRealExtractItems();
+            } catch (error) {
+              state.errorText = error instanceof Error ? error.message : String(error);
+              render();
+            }
+          });
+        });
+      }
+
+      function syncKnowledgeDraftInputs() {
+        const typeInput = document.getElementById("knowledgeTypeInput");
+        const isImageDraft = isImageType(state.knowledgeDraft.type);
+        typeInput.innerHTML = knowledgeTypeOptions(state.knowledgeDraft.type);
+        document.getElementById("knowledgeNameInput").value = state.knowledgeDraft.name;
+        typeInput.value = state.knowledgeDraft.type;
+        document.getElementById("knowledgeContentInput").value = state.knowledgeDraft.content;
+        document.getElementById("knowledgeContentField").classList.toggle("hidden", isImageDraft);
+        document.getElementById("knowledgeImageField").classList.toggle("hidden", !isImageDraft);
+        document.getElementById("knowledgeImagePreview").outerHTML = renderImagePreview(state.knowledgeDraft.imageUrl || state.knowledgeDraft.content, state.knowledgeDraft.fileName, "knowledgeImagePreview");
+        updateAddKnowledgeButton();
+      }
+
+      function updateAddKnowledgeButton() {
+        const hasDraft = Boolean(state.knowledgeDraft.name.trim() || state.knowledgeDraft.content.trim());
+        document.getElementById("addKnowledgeButton").disabled = !hasDraft;
+      }
+
+      function activeKnowledgeItems() {
+        return state.knowledgeItems.filter((item) => item.name.trim() || item.content.trim());
+      }
+
+      function knowledgeTypeOptions(selectedType) {
+        const options = state.knowledgeTypeChoices.length ? state.knowledgeTypeChoices : ["TEXT", "Image"];
+        return options
+          .map((type) => `<option value="${escapeHtml(type)}" ${selectedType === type ? "selected" : ""}>${escapeHtml(type)}</option>`)
+          .join("");
+      }
+
+      function isImageType(type) {
+        return KnowledgeUtils.formatFieldType(type) === "Image";
+      }
+
+      function renderImagePreview(content, fileName, elementId = "") {
+        const idAttr = elementId ? ` id="${escapeHtml(elementId)}"` : "";
+        if (KnowledgeUtils.isImageContent(content)) {
+          return `
+            <span class="image-preview"${idAttr}>
+              <img src="${escapeHtml(content)}" alt="${escapeHtml(fileName || "已上传图片")}" />
+              <span>
+                <strong>${escapeHtml(fileName || "已上传图片")}</strong>
+                <span>图片已加载，将作为图片字段资料使用。</span>
+              </span>
+            </span>
+          `;
+        }
+        return `
+          <span class="image-preview"${idAttr}>
+            <span>${escapeHtml(content || "选择图片后会显示预览，并同步到同名图片字段。")}</span>
+          </span>
+        `;
+      }
+
+      function readImageFile(file) {
+        return new Promise((resolve, reject) => {
+          if (!file) {
+            resolve(null);
+            return;
+          }
+          if (!file.type.startsWith("image/")) {
+            reject(new Error("请选择图片文件。"));
+            return;
+          }
+          const reader = new FileReader();
+          reader.addEventListener("load", () => resolve(reader.result));
+          reader.addEventListener("error", () => reject(new Error("图片读取失败。")));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function renderKnowledgeBase() {
+        syncKnowledgeDraftInputs();
+        const list = document.getElementById("knowledgeList");
+        if (state.knowledgeLoading) {
+          list.innerHTML = `<div class="empty-state">正在读取知识库资料。</div>`;
+          return;
+        }
+        if (state.knowledgeErrorText && !state.knowledgeItems.length) {
+          list.innerHTML = `<div class="empty-state">${escapeHtml(state.knowledgeErrorText)}</div>`;
+          return;
+        }
+        if (!state.knowledgeItems.length) {
+          list.innerHTML = `<div class="empty-state">暂无知识库资料，只能通过顶部“新增资料”表单添加。</div>`;
+          return;
+        }
+
+        list.innerHTML = state.knowledgeItems.map((item) => {
+          const contentControl = isImageType(item.type)
+            ? `
+              <label class="form-field knowledge-inline-content">
+                <span class="form-label">图片文件</span>
+                <span class="image-upload">
+                  <input type="file" accept="image/*" data-knowledge-image-id="${escapeHtml(item.id)}" />
+                  ${renderImagePreview(item.imageUrl || item.content, item.fileName)}
+                </span>
+              </label>
+            `
+            : `
+              <label class="form-field knowledge-inline-content">
+                <span class="form-label">内容</span>
+                <textarea data-knowledge-field="content">${escapeHtml(item.content)}</textarea>
+              </label>
+            `;
+          return `
+            <div class="knowledge-item compact" data-knowledge-id="${escapeHtml(item.id)}">
+              <label class="form-field">
+                <span class="form-label">资料名称</span>
+                <input type="text" value="${escapeHtml(item.name)}" data-knowledge-field="name" />
+              </label>
+              <label class="form-field">
+                <span class="form-label">字段类型</span>
+                <select data-knowledge-field="type" aria-label="字段类型">
+                  ${knowledgeTypeOptions(item.type)}
+                </select>
+              </label>
+              ${contentControl}
+              <div class="knowledge-actions">
+                <button class="icon-btn sync" type="button" data-sync-knowledge="${escapeHtml(item.id)}" title="同步知识库条目" aria-label="同步知识库条目">
+                  <span data-icon="save"></span>
+                </button>
+                <button class="icon-btn danger" type="button" data-delete-knowledge="${escapeHtml(item.id)}" title="删除知识库条目" aria-label="删除知识库条目">
+                  <span data-icon="trash"></span>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function renderPrimaryPanelTabs() {
+        const isKnowledge = state.activePreviewTab === "knowledge";
+        const knowledgeCount = activeKnowledgeItems().length;
+        document.getElementById("primaryPanelTitle").textContent = isKnowledge ? "知识库" : "文件预览";
+        document.getElementById("primaryPanelSubtitle").textContent = isKnowledge
+          ? `维护可用于生成标书的企业资料、资质与业绩，当前 ${knowledgeCount} 条`
+          : "先确认上传文件是否正确，再进入下一步";
+        document.getElementById("filePreviewPane").classList.toggle("hidden", isKnowledge);
+        document.getElementById("knowledgePane").classList.toggle("hidden", !isKnowledge);
+        document.querySelectorAll("[data-preview-tab]").forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.previewTab === state.activePreviewTab);
+        });
+        renderKnowledgeBase();
+      }
+
+      function renderWordFallback(frame, title, message, loading = false) {
+        frame.innerHTML = `
+          <div class="word-fallback ${loading ? "loading" : ""}">
+            <div>
+              <strong>${escapeHtml(title)}</strong>
+              <span>${escapeHtml(message)}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      async function renderWordPreview() {
+        const downloadButton = document.getElementById("downloadWordButton");
+        const frame = document.getElementById("wordPreviewFrame");
+        const fileName = state.file?.name || "招标文件.docx";
+
+        downloadButton.classList.toggle("hidden", !state.wordPreviewUrl);
+        if (state.wordPreviewUrl) {
+          downloadButton.href = state.wordPreviewUrl;
+          downloadButton.download = fileName;
+
+          if (state.wordPreviewRenderedFile === state.file || state.wordPreviewStatus === "loading") return;
+          if (!window.JSZip || !window.docx?.renderAsync || !state.file?.arrayBuffer) {
+            state.wordPreviewStatus = "error";
+            renderWordFallback(frame, "DOCX 预览组件未加载", `已加载 ${fileName}，可点击右上角“下载”查看原始文件。`);
+            return;
+          }
+
+          state.wordPreviewStatus = "loading";
+          const renderToken = ++state.wordPreviewRenderToken;
+          renderWordFallback(frame, "正在渲染 Word 文件", `正在解析 ${fileName}，请稍候。`, true);
+
+          try {
+            const arrayBuffer = await state.file.arrayBuffer();
+            if (renderToken !== state.wordPreviewRenderToken) return;
+            frame.innerHTML = `<div class="word-render-root"></div>`;
+            const target = frame.querySelector(".word-render-root");
+            await window.docx.renderAsync(arrayBuffer, target, null, {
+              breakPages: true,
+              className: "docx",
+              ignoreFonts: false,
+              ignoreHeight: false,
+              ignoreWidth: false,
+              inWrapper: true,
+              renderFooters: true,
+              renderHeaders: true,
+            });
+            if (renderToken !== state.wordPreviewRenderToken) return;
+            state.wordPreviewStatus = "rendered";
+            state.wordPreviewRenderedFile = state.file;
+          } catch (error) {
+            if (renderToken !== state.wordPreviewRenderToken) return;
+            state.wordPreviewStatus = "error";
+            renderWordFallback(frame, "DOCX 渲染失败", `无法直接预览 ${fileName}，可点击右上角“下载”查看原始文件。`);
+          }
+        } else {
+          state.wordPreviewStatus = "idle";
+          state.wordPreviewRenderedFile = null;
+          renderWordFallback(frame, "Word 文件预览", "上传 DOCX 后，可在这里直接渲染并查看 Word 文件。");
+        }
+      }
+
+      function renderProjectInfoSummary() {
+        const bidNumberNode = document.getElementById("bidNumberValue");
+        const projectNameNode = document.getElementById("projectNameValue");
+        const bidNumber = state.projectInfo.bidNumber;
+        const projectName = state.projectInfo.projectName || state.projectName;
+        const pendingText = state.metadataLoading ? "AI 识别中" : state.metadataErrorText ? "识别失败" : "待识别";
+
+        bidNumberNode.textContent = bidNumber || pendingText;
+        projectNameNode.textContent = projectName || pendingText;
+        bidNumberNode.classList.toggle("pending", !bidNumber);
+        projectNameNode.classList.toggle("pending", !projectName || !state.projectInfo.projectName);
+      }
+
+      function renderUploadProgress() {
+        const metadataStatus = state.metadataErrorText ? "error" : state.projectInfo.bidNumber || state.projectInfo.projectName ? "done" : state.metadataLoading ? "active" : "idle";
+        const templateStatus = state.templateUrls?.business_template_url ? "done" : state.extractLoading ? "active" : state.errorText ? "error" : "idle";
+        const extractStatus = state.fieldItems.length ? "done" : state.extractLoading && state.templateUrls?.business_template_url ? "active" : state.errorText ? "error" : "idle";
+        const steps = [
+          {
+            title: "AI解析",
+            status: metadataStatus,
+            desc: state.metadataErrorText || (metadataStatus === "done" ? "已识别招标编号和项目名称" : state.metadataLoading ? "正在调用大模型读取招标文件" : "等待开始"),
+          },
+          {
+            title: "生成商务标模版",
+            status: templateStatus,
+            desc: state.templateUrls?.business_template_url ? "商务标模版已生成" : state.extractLoading ? "正在上传并拆分招标文件" : state.errorText || "等待开始",
+          },
+          {
+            title: "提取待填写字段",
+            status: extractStatus,
+            desc: state.fieldItems.length ? `已提取 ${state.fieldItems.length} 个字段` : state.extractLoading ? "正在从商务标模版定位字段" : state.errorText || "等待模版生成",
+          },
+        ];
+        document.getElementById("uploadProgress").innerHTML = steps.map((step) => `
+          <div class="progress-step ${step.status}">
+            <span class="progress-dot"></span>
+            <span><strong>${escapeHtml(step.title)}</strong>${escapeHtml(step.desc)}</span>
+          </div>
+        `).join("");
+      }
+
+      function renderStageOne() {
+        document.getElementById("fileName").textContent = state.file?.name || "未选择文件";
+        document.getElementById("fileSize").textContent = formatSize(state.file?.size || 0);
+        document.getElementById("previewTitle").textContent = fallbackProjectName() || "招标文件预览";
+        document.getElementById("recognitionStatus").textContent = state.statusText || (state.uploaded ? "等待处理" : "等待上传");
+        document.getElementById("footerHint").textContent = state.fieldItems.length
+          ? `已从商务标模版提取 ${state.fieldItems.length} 个真实字段，当前选择 ${state.selectedIds.size} 个。`
+          : state.statusText || "确认文件和待提取项后，点击下一步进入字段确认。";
+        document.getElementById("nextButton").disabled = state.extractLoading || !state.fieldItems.length;
+        renderProjectInfoSummary();
+        renderUploadProgress();
+        renderPrimaryPanelTabs();
+        renderWordPreview();
+        renderRealExtractItems();
+      }
+
+      function buildFillPayload() {
+        const selectedItems = state.fieldItems.filter((item) => state.selectedIds.has(item.id));
+        return {
+          template_url: state.templateUrls?.business_template_url || "",
+          items_json: state.extractResult?.items_json || {},
+          selected_item_ids: selectedItems.map((item) => item.id),
+          user_inputs: selectedItems.map((item) => ({
+            item_id: item.id,
+            field_name: item.fieldName,
+            value: item.manualValue || "",
+          })),
+        };
+      }
+
+      async function runFillFlow() {
+        if (state.loading || !state.extractResult?.items_json || !state.templateUrls?.business_template_url) return;
+        state.loading = true;
+        state.stage = 3;
+        state.fillResult = null;
+        state.fillStartedAt = Date.now();
+        state.fillLogs = [
+          { step: "request", message: "提交回填请求", elapsed_ms: 0, status: "done" },
+          { step: "wait", message: "等待后端处理 Word 回填和平台上传", elapsed_ms: 0, status: "active" },
+        ];
+        state.errorText = "";
+        state.statusText = "回填标书生成中";
+        render();
+        if (state.fillProgressTimer) window.clearInterval(state.fillProgressTimer);
+        state.fillProgressTimer = window.setInterval(() => {
+          if (!state.loading) return;
+          state.fillLogs = [
+            { step: "request", message: "提交回填请求", elapsed_ms: 0, status: "done" },
+            { step: "wait", message: "等待后端处理 Word 回填和平台上传", elapsed_ms: Date.now() - state.fillStartedAt, status: "active" },
+          ];
+          render();
+        }, 1200);
+
+        try {
+          const response = await fetch("/api/fill-bid-template", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              accept: "application/json",
+            },
+            body: JSON.stringify(buildFillPayload()),
+          });
+          const payload = await parseJsonResponse(response, "生成标书失败");
+          state.fillResult = payload;
+          state.fillLogs = Array.isArray(payload.fill_logs) ? payload.fill_logs : state.fillLogs;
+          state.statusText = payload.filled_template_url ? "回填标书 .docx 已生成" : "回填标书生成中";
+          state.stage = 3;
+        } catch (error) {
+          state.errorText = error instanceof Error ? error.message : String(error);
+          state.statusText = "生成失败";
+          state.fillLogs = [
+            ...state.fillLogs.map((log) => ({ ...log, status: "done" })),
+            { step: "error", message: state.errorText, elapsed_ms: Date.now() - state.fillStartedAt, status: "active" },
+          ];
+        } finally {
+          if (state.fillProgressTimer) {
+            window.clearInterval(state.fillProgressTimer);
+            state.fillProgressTimer = null;
+          }
+          state.loading = false;
+          render();
+        }
+      }
+
+      function renderFillLogs() {
+        const logs = state.fillLogs.length
+          ? state.fillLogs
+          : [{ step: "idle", message: "等待提交回填请求", elapsed_ms: 0, status: "active" }];
+        return `
+          <div class="log-progress">
+            <div class="log-progress-title">生成进度</div>
+            <div class="log-progress-list">
+              ${logs.map((log, index) => {
+                const isActive = log.status === "active" || (state.loading && index === logs.length - 1);
+                const statusClass = isActive ? "active" : "done";
+                const elapsed = Number(log.elapsed_ms || 0);
+                return `
+                  <div class="log-progress-item ${statusClass}">
+                    <span class="log-dot"></span>
+                    <span>
+                      <span class="log-progress-message">${escapeHtml(log.message || log.step || "处理中")}</span>
+                      ${log.step ? `<span class="mini-chip">${escapeHtml(log.step)}</span>` : ""}
+                    </span>
+                    <span class="log-progress-time">${elapsed ? `${(elapsed / 1000).toFixed(1)}s` : ""}</span>
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderLaterStage() {
+        const titleMap = {
+          2: "第二步：确认提取项",
+          3: "第三步：生成标书",
+        };
+        const selectedItems = state.fieldItems.filter((item) => state.selectedIds.has(item.id));
+        const knowledgeItems = activeKnowledgeItems();
+        const knowledgeNames = knowledgeItems.slice(0, 3).map((item) => item.name || item.type).join("、");
+        const copyMap = {
+          2: "请检查第 1 步选择的待提取字段。点击生成标书后，系统会把确认后的内容回填进 Word。",
+          3: state.errorText || state.statusText || "回填标书生成中",
+        };
+        const sectionStats = Object.entries(groupBySection(selectedItems)).map(([section, items]) => ({
+          title: section,
+          desc: `${items.length} 个待填写字段，包含 ${uniqueValues(items, "fieldType").join(" / ") || "text"} 类型`,
+        }));
+        const cards = sectionStats;
+        const resultUrl = state.fillResult?.filled_template_url || "";
+        const hasDownloadUrl = isHttpUrl(resultUrl);
+        const resultTitle = state.errorText ? "生成失败" : hasDownloadUrl ? "回填标书 .docx 已生成" : "回填标书生成中";
+        const resultDesc = hasDownloadUrl ? resultUrl : state.errorText || "正在等待后端返回平台下载链接";
+
+        document.getElementById("laterTitle").textContent = titleMap[state.stage];
+        document.getElementById("laterCopy").textContent = copyMap[state.stage];
+        document.getElementById("laterNextButton").textContent = state.loading ? "生成中..." : state.stage === 3 ? "完成" : "生成标书";
+        document.getElementById("laterNextButton").disabled = state.loading;
+        const stageGrid = document.getElementById("stageGrid");
+        stageGrid.classList.toggle("result-mode", state.stage === 3);
+        stageGrid.innerHTML = state.stage === 2
+          ? cards.map((card) => `
+              <div class="stage-card">
+                <div class="item-title">${card.title}</div>
+                <div class="item-desc">${card.desc}</div>
+              </div>
+            `).join("")
+          : `
+              <div class="result-panel">
+                <div class="result-download ${hasDownloadUrl ? "" : "pending"}">
+                  <div class="result-download-icon">${hasDownloadUrl ? icon("download") : `<span class="spinner"></span>`}</div>
+                  <div>
+                    <div class="result-download-title">${escapeHtml(resultTitle)}</div>
+                    <div class="result-download-desc">${escapeHtml(resultDesc)}</div>
+                  </div>
+                  <div class="result-download-actions">
+                    ${hasDownloadUrl
+                      ? `<a class="btn success" href="${escapeHtml(resultUrl)}" target="_blank" rel="noopener">下载文件 ${icon("download")}</a>`
+                      : `<button class="btn success" type="button" disabled>等待下载链接</button>`}
+                  </div>
+                </div>
+                ${renderFillLogs()}
+              </div>
+            `;
+      }
+
+      function render() {
+        renderStepper();
+        document.getElementById("uploadFirst").classList.toggle("hidden", state.uploaded);
+        document.getElementById("stageOne").classList.toggle("hidden", !state.uploaded || state.stage !== 1);
+        document.getElementById("laterStage").classList.toggle("hidden", !state.uploaded || state.stage === 1);
+        if (state.uploaded && state.stage === 1) renderStageOne();
+        if (state.uploaded && state.stage > 1) renderLaterStage();
+        hydrateIcons();
+      }
+
+      document.getElementById("fileInput").addEventListener("change", (event) => {
+        handleFile(event.target.files[0]);
+      });
+
+      document.getElementById("dropZone").addEventListener("dragover", (event) => {
+        event.preventDefault();
+        event.currentTarget.classList.add("dragging");
+      });
+
+      document.getElementById("dropZone").addEventListener("dragleave", (event) => {
+        event.currentTarget.classList.remove("dragging");
+      });
+
+      document.getElementById("dropZone").addEventListener("drop", (event) => {
+        event.preventDefault();
+        event.currentTarget.classList.remove("dragging");
+        handleFile(event.dataTransfer.files[0]);
+      });
+
+      document.getElementById("nextButton").addEventListener("click", () => {
+        if (state.extractLoading || !state.fieldItems.length) return;
+        state.stage = 2;
+        render();
+      });
+
+      document.getElementById("laterNextButton").addEventListener("click", () => {
+        if (state.stage === 2) {
+          runFillFlow();
+          return;
+        }
+        render();
+      });
+
+      document.getElementById("backButton").addEventListener("click", () => {
+        if (state.stage > 1) state.stage -= 1;
+        render();
+      });
+
+      document.getElementById("searchInput").addEventListener("input", (event) => {
+        state.filters.query = event.currentTarget.value;
+        renderRealExtractItems();
+      });
+      document.getElementById("sectionFilter").addEventListener("change", (event) => {
+        state.filters.section = event.currentTarget.value;
+        renderRealExtractItems();
+      });
+      document.getElementById("typeFilter").addEventListener("change", (event) => {
+        state.filters.type = event.currentTarget.value;
+        renderRealExtractItems();
+      });
+
+      document.querySelectorAll("[data-preview-tab]").forEach((tab) => {
+        tab.addEventListener("click", (event) => {
+          state.activePreviewTab = event.currentTarget.dataset.previewTab;
+          renderStageOne();
+          hydrateIcons();
+        });
+      });
+
+      document.getElementById("knowledgeNameInput").addEventListener("input", (event) => {
+        state.knowledgeDraft.name = event.currentTarget.value;
+        updateAddKnowledgeButton();
+      });
+      document.getElementById("knowledgeTypeInput").addEventListener("change", (event) => {
+        state.knowledgeDraft.type = event.currentTarget.value;
+        syncKnowledgeDraftInputs();
+      });
+      document.getElementById("knowledgeImageInput").addEventListener("change", async (event) => {
+        const file = event.currentTarget.files[0];
+        try {
+          const payload = await uploadKnowledgeImage(file);
+          if (!payload?.image_url) return;
+          state.knowledgeDraft.content = payload.image_url;
+          state.knowledgeDraft.imageUrl = payload.image_url;
+          state.knowledgeDraft.fileName = payload.file_name || file.name;
+          syncKnowledgeDraftInputs();
+        } catch (error) {
+          state.knowledgeDraft.content = error instanceof Error ? error.message : String(error);
+          state.knowledgeDraft.imageUrl = "";
+          state.knowledgeDraft.fileName = "";
+          syncKnowledgeDraftInputs();
+        }
+      });
+      document.getElementById("knowledgeContentInput").addEventListener("input", (event) => {
+        state.knowledgeDraft.content = event.currentTarget.value;
+        updateAddKnowledgeButton();
+      });
+      document.getElementById("addKnowledgeButton").addEventListener("click", async () => {
+        const name = state.knowledgeDraft.name.trim();
+        const content = state.knowledgeDraft.content.trim();
+        if (!name && !content) return;
+        const item = {
+          id: `kb_${Date.now()}_${state.nextKnowledgeId++}`,
+          name: name || "未命名资料",
+          type: state.knowledgeDraft.type,
+          content,
+          imageUrl: state.knowledgeDraft.imageUrl || (isImageType(state.knowledgeDraft.type) ? content : ""),
+          fileName: state.knowledgeDraft.fileName || "",
+        };
+        try {
+          const savedItem = await createKnowledgeItem(item);
+          state.knowledgeItems.unshift(savedItem);
+          syncKnowledgeContentToFields(savedItem);
+          state.knowledgeDraft = { name: "", type: state.knowledgeTypeChoices[0] || "TEXT", content: "", imageUrl: "", fileName: "" };
+          renderStageOne();
+          hydrateIcons();
+        } catch (error) {
+          state.knowledgeErrorText = error instanceof Error ? error.message : String(error);
+          renderStageOne();
+        }
+      });
+
+      document.getElementById("knowledgeList").addEventListener("input", (event) => {
+        const itemNode = event.target.closest("[data-knowledge-id]");
+        const field = event.target.dataset.knowledgeField;
+        if (!itemNode || !field) return;
+        const item = state.knowledgeItems.find((entry) => entry.id === itemNode.dataset.knowledgeId);
+        if (item) {
+          item[field] = event.target.value;
+          if (field === "content") {
+            syncKnowledgeContentToFields(item);
+            const fieldItem = state.fieldItems.find((entry) => KnowledgeUtils.fieldNamesMatch(entry.fieldName, item.name));
+            if (fieldItem) syncRenderedManualInputs(fieldItem);
+          }
+        }
+      });
+      document.getElementById("knowledgeList").addEventListener("change", async (event) => {
+        const imageInput = event.target.closest("[data-knowledge-image-id]");
+        if (imageInput) {
+          const item = state.knowledgeItems.find((entry) => entry.id === imageInput.dataset.knowledgeImageId);
+          if (!item) return;
+          try {
+            const payload = await uploadKnowledgeImage(imageInput.files[0]);
+            if (!payload?.image_url) return;
+            item.content = payload.image_url;
+            item.imageUrl = payload.image_url;
+            item.fileName = payload.file_name || imageInput.files[0].name;
+            const savedItem = await saveKnowledgeItem(item);
+            Object.assign(item, savedItem);
+            syncKnowledgeContentToFields(item);
+            const fieldItem = state.fieldItems.find((entry) => KnowledgeUtils.fieldNamesMatch(entry.fieldName, item.name));
+            if (fieldItem) syncRenderedManualInputs(fieldItem);
+          } catch (error) {
+            state.knowledgeErrorText = error instanceof Error ? error.message : String(error);
+          }
+          renderStageOne();
+          hydrateIcons();
+          return;
+        }
+
+        const itemNode = event.target.closest("[data-knowledge-id]");
+        const field = event.target.dataset.knowledgeField;
+        if (!itemNode || !field) return;
+        const item = state.knowledgeItems.find((entry) => entry.id === itemNode.dataset.knowledgeId);
+        if (item) {
+          item[field] = event.target.value;
+          if (field === "type") {
+            item.type = KnowledgeUtils.formatFieldType(item.type);
+            try {
+              const savedItem = await saveKnowledgeItem(item);
+              Object.assign(item, savedItem);
+            } catch (error) {
+              state.knowledgeErrorText = error instanceof Error ? error.message : String(error);
+            }
+            renderStageOne();
+            hydrateIcons();
+            return;
+          }
+          if (field === "content") {
+            syncKnowledgeContentToFields(item);
+            const fieldItem = state.fieldItems.find((entry) => KnowledgeUtils.normalizeFieldName(entry.fieldName) === KnowledgeUtils.normalizeFieldName(item.name));
+            if (fieldItem) syncRenderedManualInputs(fieldItem);
+          }
+          try {
+            const savedItem = await saveKnowledgeItem(item);
+            Object.assign(item, savedItem);
+          } catch (error) {
+            state.knowledgeErrorText = error instanceof Error ? error.message : String(error);
+          }
+        }
+      });
+      document.getElementById("knowledgeList").addEventListener("click", async (event) => {
+        const syncButton = event.target.closest("[data-sync-knowledge]");
+        if (syncButton) {
+          const item = state.knowledgeItems.find((entry) => entry.id === syncButton.dataset.syncKnowledge);
+          try {
+            if (item) await syncKnowledgeItem(item);
+            renderStageOne();
+            hydrateIcons();
+          } catch (error) {
+            state.knowledgeErrorText = error instanceof Error ? error.message : String(error);
+            renderStageOne();
+          }
+          return;
+        }
+
+        const deleteButton = event.target.closest("[data-delete-knowledge]");
+        if (!deleteButton) return;
+        const item = state.knowledgeItems.find((entry) => entry.id === deleteButton.dataset.deleteKnowledge);
+        try {
+          if (item) await deleteKnowledgeItem(item);
+          state.knowledgeItems = state.knowledgeItems.filter((entry) => entry.id !== deleteButton.dataset.deleteKnowledge);
+          renderStageOne();
+          hydrateIcons();
+        } catch (error) {
+          state.knowledgeErrorText = error instanceof Error ? error.message : String(error);
+          renderStageOne();
+        }
+      });
+
+      render();
+      loadKnowledgeItems();
+    </script>
+  </body>
+</html>

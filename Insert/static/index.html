@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word文档知识库插入系统</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>📄 Word文档知识库智能插入系统</h1>
+            <p class="subtitle">上传Word文档，配置知识库，智能插入相关数据</p>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 左侧：知识库管理 -->
+            <section class="knowledge-panel">
+                <div class="panel-header">
+                    <h2>📚 知识库管理</h2>
+                    <button class="btn btn-primary" onclick="showAddKnowledgeModal()">
+                        <span>+</span> 添加条目
+                    </button>
+                </div>
+                
+                <div class="knowledge-list" id="knowledgeList">
+                    <!-- 知识条目将动态加载 -->
+                </div>
+            </section>
+
+            <!-- 右侧：文档处理 -->
+            <section class="document-panel">
+                <!-- 上传区域 -->
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-content">
+                        <div class="upload-icon">📤</div>
+                        <h3>拖拽或点击上传Word文档</h3>
+                        <p>支持 .docx 格式</p>
+                        <input type="file" id="fileInput" accept=".docx" hidden>
+                    </div>
+                </div>
+
+                <!-- 文件信息 -->
+                <div class="file-info hidden" id="fileInfo">
+                    <div class="file-card">
+                        <span class="file-icon">📄</span>
+                        <div class="file-details">
+                            <span class="file-name" id="fileName"></span>
+                            <span class="file-status" id="fileStatus">已上传</span>
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="clearFile()">删除</button>
+                    </div>
+                </div>
+
+                <!-- 文档预览 -->
+                <div class="preview-section hidden" id="previewSection">
+                    <h3>📋 文档内容预览</h3>
+                    <div class="preview-content" id="previewContent"></div>
+                </div>
+
+                <!-- 处理按钮 -->
+                <div class="action-buttons hidden" id="actionButtons">
+                    <button class="btn btn-success btn-lg" onclick="processDocument()">
+                        🚀 开始处理
+                    </button>
+                </div>
+
+                <!-- 处理结果 -->
+                <div class="result-section hidden" id="resultSection">
+                    <h3>✅ 处理结果</h3>
+                    <div class="result-info" id="resultInfo"></div>
+                    <div class="insertions-list" id="insertionsList"></div>
+                    <button class="btn btn-primary btn-lg" id="downloadBtn">
+                        📥 下载处理后的文档
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 添加/编辑知识条目模态框 -->
+    <div class="modal hidden" id="knowledgeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">添加知识条目</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="knowledgeForm" onsubmit="saveKnowledge(event)">
+                <input type="hidden" id="knowledgeId">
+                <div class="form-group">
+                    <label for="fieldName">字段名称</label>
+                    <input type="text" id="fieldName" required placeholder="例如：公司名称、注册资本">
+                </div>
+                <div class="form-group">
+                    <label for="content">内容</label>
+                    <textarea id="content" required placeholder="填入具体的内容值" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="description">描述 (可选)</label>
+                    <input type="text" id="description" placeholder="对该字段的补充说明">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading 遮罩 -->
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p id="loadingText">处理中...</p>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

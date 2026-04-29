@@ -1,0 +1,15 @@
+.git
+.pytest_cache
+__pycache__
+*.pyc
+.DS_Store
+.env
+data
+runtime
+4.15测试-箱室类
+4.15测试-箱室类.zip
+*.docx
+*.pdf
+Insert
+services
+string

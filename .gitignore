@@ -1,0 +1,12 @@
+.DS_Store
+__pycache__/
+*.pyc
+*.zip
+4.15测试-箱室类/投标文件/*.pdf
+runtime/
+dist/
+.env
+Insert/.env
+Insert/.git/
+.pytest_cache/
+~$*.docx
